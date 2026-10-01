@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abblo API &amp; Activities Reference</title>
+<style>
+  /* Layout: fixed left sidebar (table of contents) + scrolling main column.
+     Color: Abblo violet accent on a quiet slate neutral, both themes.
+     Type: IBM Plex Sans for prose/headings, IBM Plex Mono for code/endpoints. */
+  :root{
+    --bg:#f7f6fb; --surface:#ffffff; --surface-2:#f1eefb; --border:#e3ddf4;
+    --text:#211a33; --text-dim:#5c5478; --accent:#7c3aed; --accent-dim:#efe8fd;
+    --get:#1d6f42; --get-bg:#e4f5ea; --post:#9a4b00; --post-bg:#fdecd6;
+    --patch:#8a5a00; --patch-bg:#fcf0cf; --delete:#b3271e; --delete-bg:#fbe4e2;
+    --code-bg:#2a2340; --code-fg:#efe9ff; --warn-bg:#fdf1e7; --warn-border:#e8b98a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17131f; --surface:#1f1a2c; --surface-2:#241e35; --border:#342b4d;
+      --text:#eee8fb; --text-dim:#a79cc7; --accent:#b794f6; --accent-dim:#2d2545;
+      --get:#5fd38a; --get-bg:#1b3327; --post:#f2a95c; --post-bg:#3a2a14;
+      --patch:#f0c75e; --patch-bg:#3a3014; --delete:#f28b84; --delete-bg:#3a1e1c;
+      --code-bg:#120e1c; --code-fg:#e8e1ff; --warn-bg:#30271a; --warn-border:#7a5a2e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17131f; --surface:#1f1a2c; --surface-2:#241e35; --border:#342b4d;
+    --text:#eee8fb; --text-dim:#a79cc7; --accent:#b794f6; --accent-dim:#2d2545;
+    --get:#5fd38a; --get-bg:#1b3327; --post:#f2a95c; --post-bg:#3a2a14;
+    --patch:#f0c75e; --patch-bg:#3a3014; --delete:#f28b84; --delete-bg:#3a1e1c;
+    --code-bg:#120e1c; --code-fg:#e8e1ff; --warn-bg:#30271a; --warn-border:#7a5a2e;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"IBM Plex Sans", system-ui, sans-serif;
+    font-size:15px; line-height:1.6;
+  }
+  h1,h2,h3,h4{ font-family:"IBM Plex Sans", system-ui, sans-serif; text-wrap:balance; color:var(--text); }
+  code, pre, .mono, .path, th.meth, td.meth { font-family:"IBM Plex Mono","SFMono-Regular",monospace; }
+
+  .shell{ display:flex; min-height:100%; }
+  nav.toc{
+    width:272px; flex:0 0 272px; position:sticky; top:0; align-self:flex-start;
+    height:100dvh; overflow-y:auto; padding:28px 18px 28px 24px;
+    border-right:1px solid var(--border); background:var(--surface);
+  }
+  nav.toc .brand{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  nav.toc .brand .dot{ width:12px; height:12px; border-radius:50%; background:var(--accent); flex:0 0 auto; }
+  nav.toc .brand strong{ font-size:15px; letter-spacing:0.02em; }
+  nav.toc .brand span{ display:block; font-size:11.5px; color:var(--text-dim); }
+  nav.toc a{
+    display:block; color:var(--text-dim); text-decoration:none; font-size:13.5px;
+    padding:6px 10px; border-radius:7px; margin-bottom:1px;
+  }
+  nav.toc a:hover{ background:var(--surface-2); color:var(--text); }
+  nav.toc .grp{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.09em; color:var(--text-dim);
+    margin:18px 0 6px 10px; font-weight:600;
+  }
+  nav.toc .grp:first-of-type{ margin-top:4px; }
+
+  .langsw{
+    display:flex; border:1px solid var(--border); border-radius:100px; padding:3px;
+    background:var(--surface-2); margin-bottom:18px;
+  }
+  .langsw button{
+    flex:1; border:0; background:transparent; color:var(--text-dim); font-family:inherit;
+    font-size:12.5px; font-weight:600; padding:6px 0; border-radius:100px; cursor:pointer;
+  }
+  .langsw button.active{ background:var(--accent); color:#fff; }
+
+  main{ flex:1 1 auto; min-width:0; padding:40px 48px 120px; max-width:880px; }
+  header.hero{ margin-bottom:36px; }
+  header.hero h1{ font-size:30px; margin:0 0 8px; }
+  header.hero p{ color:var(--text-dim); font-size:15px; max-width:62ch; margin:0 0 4px; }
+  header.hero .meta{ margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }
+  .pill{ font-size:11.5px; padding:4px 10px; border-radius:100px; background:var(--accent-dim); color:var(--accent); font-weight:600; }
+
+  section{ margin:52px 0; scroll-margin-top:20px; }
+  section h2{ font-size:22px; padding-bottom:10px; border-bottom:1px solid var(--border); margin:0 0 16px; }
+  section h3{ font-size:16.5px; margin:28px 0 10px; }
+  section h4{ font-size:14px; margin:20px 0 6px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
+  p{ margin:0 0 12px; max-width:72ch; }
+  ul,ol{ margin:0 0 14px; padding-left:22px; }
+  li{ margin-bottom:5px; max-width:70ch; }
+  strong{ color:var(--text); }
+
+  .note{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:12px 16px; font-size:13.5px; color:var(--text-dim); margin:14px 0;
+  }
+  .note strong{ color:var(--text); }
+  .warn{
+    background:var(--warn-bg); border:1px solid var(--warn-border); border-radius:10px;
+    padding:12px 16px; font-size:13.5px; margin:14px 0;
+  }
+  .warn strong{ color:var(--text); }
+
+  .endpoint{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:10px 14px; margin:10px 0 4px;
+  }
+  .meth{ font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:6px; flex:0 0 auto; }
+  .meth.get{ color:var(--get); background:var(--get-bg); }
+  .meth.post{ color:var(--post); background:var(--post-bg); }
+  .meth.patch{ color:var(--patch); background:var(--patch-bg); }
+  .meth.delete{ color:var(--delete); background:var(--delete-bg); }
+  .path{ font-size:13.5px; word-break:break-word; }
+  .src{ font-size:12px; color:var(--text-dim); margin:0 0 18px 2px; }
+
+  pre{
+    background:var(--code-bg); color:var(--code-fg); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; font-size:12.5px; line-height:1.55;
+    margin:8px 0 18px;
+  }
+  pre code{ font-family:inherit; }
+  .tok-key{ color:#9fd3ff; } .tok-str{ color:#b9f0c2; } .tok-num{ color:#ffd98a; } .tok-bool{ color:#ffb3c7; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin:10px 0 20px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); font-weight:600; }
+  td.mono{ font-size:12.5px; }
+  .tablewrap{ overflow-x:auto; }
+
+  details{ background:var(--surface); border:1px solid var(--border); border-radius:10px; margin:8px 0; padding:2px 14px; }
+  details summary{ cursor:pointer; padding:10px 0; font-size:13.5px; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:10px; }
+  details summary::-webkit-details-marker{ display:none; }
+  details summary::after{ content:"+"; color:var(--text-dim); font-weight:400; }
+  details[open] summary::after{ content:"–"; }
+  details .inner{ padding-bottom:12px; }
+
+  .flow{ display:flex; flex-direction:column; gap:0; margin:16px 0 24px; }
+  .flow .step{ display:flex; gap:14px; }
+  .flow .num{
+    flex:0 0 26px; height:26px; border-radius:50%; background:var(--accent-dim); color:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+  }
+  .flow .line{ width:1px; background:var(--border); flex:1 1 auto; margin:2px 0 2px 13px; }
+  .flow .body{ padding-bottom:18px; }
+  .flow .body h4{ margin:2px 0 4px; text-transform:none; letter-spacing:0; font-size:14px; color:var(--text); }
+  .flow .body p{ margin:0; font-size:13.5px; color:var(--text-dim); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width: 760px){ .grid2{ grid-template-columns:1fr; } }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; min-width:0; }
+  .card h4{ margin-top:0; }
+
+  footer.end{ color:var(--text-dim); font-size:12.5px; padding-top:24px; border-top:1px solid var(--border); margin-top:60px; }
+
+  .menu-btn{ display:none; }
+  @media (max-width: 880px){
+    nav.toc{
+      position:fixed; z-index:50; left:0; top:0; height:100dvh; transform:translateX(-100%);
+      transition:transform .2s ease; box-shadow:0 0 0 2000px rgba(0,0,0,0); width:78vw; max-width:300px;
+    }
+    nav.toc.open{ transform:translateX(0); box-shadow:0 0 40px rgba(0,0,0,.35); }
+    main{ padding:70px 20px 100px; max-width:100%; }
+    .menu-btn{
+      display:flex; position:fixed; top:14px; left:14px; z-index:60; align-items:center; gap:8px;
+      background:var(--surface); border:1px solid var(--border); color:var(--text);
+      border-radius:100px; padding:9px 14px; font-size:13px; font-weight:600;
+    }
+    .grid2{ grid-template-columns:1fr; }
+  }
+
+  [data-i18n], [data-i18n-html]{ } /* marker only */
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<button class="menu-btn" onclick="document.querySelector('nav.toc').classList.toggle('open')"><span data-i18n="menu">☰ Índice</span></button>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="brand"><div class="dot"></div><div><strong>Abblo</strong><span data-i18n="brand_sub">Referencia de API y Actividades</span></div></div>
+
+    <div class="langsw" role="group" aria-label="Language">
+      <button id="btn-es" onclick="setLang('es')">Español</button>
+      <button id="btn-en" onclick="setLang('en')">English</button>
+    </div>
+
+    <div class="grp" data-i18n="grp_start">Empieza aquí</div>
+    <a href="#overview" data-i18n="nav_overview">Resumen</a>
+    <a href="#conventions" data-i18n="nav_conventions">Convenciones de las peticiones</a>
+    <a href="#data-model" data-i18n="nav_data_model">Modelo de datos central</a>
+
+    <div class="grp" data-i18n="grp_auth">Auth y perfil</div>
+    <a href="#auth" data-i18n="nav_auth">Autenticación</a>
+    <a href="#profile" data-i18n="nav_profile">Perfil y foto</a>
+
+    <div class="grp" data-i18n="grp_content">Contenido y progreso</div>
+    <a href="#navigation" data-i18n="nav_navigation">Course → Level → Unit → Lesson</a>
+    <a href="#progress" data-i18n="nav_progress">Seguimiento de progreso</a>
+
+    <div class="grp" data-i18n="grp_activities">Actividades (núcleo)</div>
+    <a href="#activities-overview" data-i18n="nav_activities_overview">Cómo funciona una actividad</a>
+    <a href="#activity-types" data-i18n="nav_activity_types">Los 24 tipos de actividad</a>
+    <a href="#process-field" data-i18n="nav_process_field">El campo "process"</a>
+    <a href="#submitting" data-i18n="nav_submitting">Enviar respuestas</a>
+    <a href="#attempts" data-i18n="nav_attempts">Modelo de intentos</a>
+    <a href="#live-example" data-i18n="nav_live_example">Ejemplo real capturado</a>
+
+    <div class="grp" data-i18n="grp_tests">Tests</div>
+    <a href="#tests" data-i18n="nav_tests">El módulo de Tests</a>
+
+    <div class="grp" data-i18n="grp_teacher">Lado docente</div>
+    <a href="#teacher" data-i18n="nav_teacher">Clases, calificación y reportes</a>
+
+    <div class="grp" data-i18n="grp_wrap">Cierre</div>
+    <a href="#caveats" data-i18n="nav_caveats">Problemas a tener en cuenta</a>
+    <a href="#endpoint-index" data-i18n="nav_endpoint_index">Índice completo de endpoints</a>
+  </nav>
+
+  <main>
+    <header class="hero" id="overview">
+      <h1 data-i18n="h1_title">Abblo API &amp; Activities Reference</h1>
+      <p data-i18n="hero_p1">Cómo el frontend web de Abblo habla con el backend — cada endpoint que llama, la forma exacta de cada petición y respuesta, y en particular cómo funciona el motor de <strong>Actividades</strong>: el esquema de contenido, el flujo de envío de respuestas, y cómo se registran los intentos. Escrito para el equipo que está construyendo Abblo Mobile.</p>
+      <p data-i18n="hero_p2">Hecho leyendo el código fuente del frontend en producción (<code>abblo-frontend-jesus-trocha</code>) y capturando en vivo una petición/respuesta real de una lección real. Donde el código del frontend no revela algo, se aclara explícitamente en vez de adivinar.</p>
+      <div class="meta">
+        <span class="pill" data-i18n="pill1">React + Redux Toolkit + Vite</span>
+        <span class="pill" data-i18n="pill2">REST / JSON sobre HTTPS</span>
+        <span class="pill" data-i18n="pill3">Autenticación con Bearer token</span>
+      </div>
+    </header>
+
+    <section id="conventions">
+      <h2 data-i18n="s_conventions_h2">Convenciones de las peticiones</h2>
+      <p data-i18n="s_conventions_p1">Toda petición pasa por un único wrapper, <code>customFetch</code> (<code>src/services/fetch.ts</code>). Algunas reglas aplican a <em>todos</em> los endpoints de abajo salvo que se indique lo contrario:</p>
+      <div class="grid2">
+        <div class="card">
+          <h4 data-i18n="conv_base_h">Base URL</h4>
+          <p style="margin:0" data-i18n="conv_base_p">Se elige con una bandera definida en tiempo de compilación: <code>VITE_DEV === "on"</code> → API de dev (<code>pabbloapi.americana.edu.co/api/</code>), si no, producción (<code>sauco.abblo.com.co/api/</code>). Cada ruta de abajo es relativa a esa base — ej. <code>user/me</code> en realidad significa <code>https://sauco.abblo.com.co/api/user/me</code>.</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="conv_auth_h">Header de auth</h4>
+          <p style="margin:0" data-i18n="conv_auth_p">Casi todas las llamadas envían <code>Authorization: Bearer &lt;access_token&gt;</code> más <code>Content-Type: application/json</code>. Las pocas que suben un archivo (login, subida de foto) envían <code>multipart/form-data</code> en su lugar, sin header de Content-Type explícito.</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="conv_401_h">Comportamiento en 401</h4>
+          <p style="margin:0" data-i18n="conv_401_p">Un 401 en <em>cualquier</em> petición borra inmediatamente toda la sesión y fuerza un nuevo login. No hay ningún flujo de refresh-token en este frontend — si la app móvil quiere re-autenticación silenciosa, eso necesitaría soporte del backend que no parece usarse aquí.</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="conv_page_h">Paginación</h4>
+          <p style="margin:0" data-i18n="conv_page_p">No hay un constructor de queries consistente — la mayoría de los endpoints de listado se llaman con strings armados a mano como <code>?page=1&amp;per_page=100&amp;order_by=name-asc</code>. Trata <code>page</code>, <code>per_page</code>, <code>order_by=field-asc|desc</code> y varias claves <code>filter_by_*</code> como la convención de facto.</p>
+        </div>
+      </div>
+      <div class="note" data-i18n="conv_file_note"><strong>Descarga de archivos.</strong> Solo un endpoint devuelve un archivo binario (el reporte Excel grupal del docente) — usa una ruta aparte, <code>customFetchFile</code>, que lee un <code>Blob</code> en vez de JSON. Todo lo demás en este documento es JSON.</div>
+    </section>
+
+    <section id="data-model">
+      <h2 data-i18n="s_data_model_h2">Modelo de datos central: Course, Level, Group, Enrolment</h2>
+      <p data-i18n="dm_p1">Estos cuatro conceptos aparecen en casi todos los endpoints, y el equipo móvil necesita tener clara la diferencia antes de que cualquier otra cosa tenga sentido.</p>
+      <div class="grid2">
+        <div class="card">
+          <h4><span data-i18n="dm_level_h">Nivel</span> <span class="mono" style="font-weight:400;color:var(--text-dim)">(level_course)</span></h4>
+          <p style="margin:0" data-i18n="dm_level_p">Un sub-nivel del currículo CEFR — el contenido en sí. Compartido por todos los estudiantes que lo cursan. Los nombres reales se ven así: <strong>"Elementary A1.1"</strong> o <strong>"Intermediate B1.1"</strong>. Tiene <code>id</code>, <code>name</code>, <code>ordering</code> (su posición, base 1, en todo el currículo).</p>
+        </div>
+        <div class="card">
+          <h4><span data-i18n="dm_group_h">Grupo</span> <span class="mono" style="font-weight:400;color:var(--text-dim)">(group)</span></h4>
+          <p style="margin:0" data-i18n="dm_group_p">Una clase/cohorte específica cursando ese nivel: un docente, un <code>code</code>, un <code>period</code> (periodo académico), fechas de inicio/fin, y una <code>group_password</code> para auto-matricularse. Lleva crucialmente <code>is_active</code> — si este es el grupo que el estudiante debería estar usando ahora mismo.</p>
+        </div>
+      </div>
+      <p style="margin-top:16px" data-i18n="dm_enrol_p"><strong>Matrícula (Enrolment)</strong> = un emparejamiento (Nivel, Grupo) para un estudiante. Un estudiante puede tener varias filas de matrícula para el <em>mismo</em> nivel a lo largo del tiempo (repitiéndolo, cambiando de cohorte) — solo una debería tener <code>group.is_active: true</code> por nivel a la vez.</p>
+      <div class="warn" data-i18n="dm_warn"><strong>Por qué importa:</strong> casi todos los endpoints de contenido están indexados por <strong>id de grupo</strong>, no de nivel — <code>group/{idGroup}/units/activities</code>, <code>group/{idGroup}/user/{idUser}/grades</code>, <code>activity/{id}/group/{idGroup}/attempt</code>. El móvil siempre debe resolver "mi grupo activo para este nivel" a partir de <code>enrolments</code> antes de poder pedir cualquier contenido — el id de nivel solo no alcanza.</div>
+      <h4 data-i18n="dm_example_h">Ejemplo: respuesta de <code class="mono">GET user/enrolments</code></h4>
+      <pre><code>[
+  {
+    <span class="tok-key">"course"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"English"</span> },
+    <span class="tok-key">"group_user"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">6110</span> },
+    <span class="tok-key">"group"</span>: {
+      <span class="tok-key">"id"</span>: <span class="tok-num">412</span>,
+      <span class="tok-key">"name"</span>: <span class="tok-str">"A1.2-Evening-Group-03"</span>,
+      <span class="tok-key">"code"</span>: <span class="tok-str">"ENG-A1-2025B-G03"</span>,
+      <span class="tok-key">"period"</span>: <span class="tok-str">"2025B"</span>,
+      <span class="tok-key">"group_password"</span>: <span class="tok-str">"q9mz1a"</span>,
+      <span class="tok-key">"start_date"</span>: <span class="tok-str">"2025-06-01"</span>,
+      <span class="tok-key">"finish_date"</span>: <span class="tok-str">"2025-09-30"</span>,
+      <span class="tok-key">"offered"</span>: <span class="tok-bool">true</span>,
+      <span class="tok-key">"is_active"</span>: <span class="tok-bool">true</span>,
+      <span class="tok-key">"img_big"</span>: <span class="tok-str">"https://.../a1.2-big.png"</span>,
+      <span class="tok-key">"img_small"</span>: <span class="tok-str">"https://.../a1.2-small.png"</span>
+    },
+    <span class="tok-key">"level_course"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">102</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Elementary A1.2"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-num">2</span> }
+  }
+]</code></pre>
+      <p class="src" data-i18n="dm_src">Campos confirmados en <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> y en el uso real en toda la app.</p>
+    </section>
+
+    <section id="auth">
+      <h2 data-i18n="s_auth_h2">Autenticación</h2>
+
+      <div class="endpoint"><span class="meth post">POST</span><span class="path">auth</span></div>
+      <p data-i18n="auth_p1">Login. <code>multipart/form-data</code> con <code>identification_number</code> + <code>password</code>. <strong>La respuesta es plana</strong> — el token y el perfil completo vienen juntos al nivel superior, no anidados:</p>
+      <pre><code>{
+  <span class="tok-key">"access_token"</span>: <span class="tok-str">"eyJ..."</span>,
+  <span class="tok-key">"id_user"</span>: <span class="tok-num">11095</span>,
+  <span class="tok-key">"first_name"</span>: <span class="tok-str">"Jesucito"</span>,
+  <span class="tok-key">"last_name"</span>: <span class="tok-str">"Trocha"</span>,
+  <span class="tok-key">"email"</span>: <span class="tok-str">"student@example.com"</span>,
+  <span class="tok-key">"rol_code"</span>: <span class="tok-str">"01"</span>,
+  <span class="tok-key">"rol_name"</span>: <span class="tok-str">"Estudiante"</span>,
+  <span class="tok-key">"username"</span>: <span class="tok-str">"758418923"</span>,
+  <span class="tok-key">"img_big"</span>: <span class="tok-str">"https://..."</span>,
+  <span class="tok-key">"img_small"</span>: <span class="tok-str">"https://..."</span>,
+  <span class="tok-key">"is_external_user"</span>: <span class="tok-bool">false</span>
+}</code></pre>
+      <p data-i18n="auth_p2"><code class="mono">rol_code</code>: <strong>"01"</strong> = estudiante, <strong>"02"</strong> = docente. Este único campo maneja casi todas las decisiones de UI según rol en la app.</p>
+
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">user/enrolments</span></div>
+      <p data-i18n="auth_p3">Se pide justo después del login (y de nuevo al unirse a una clase nueva). Devuelve el arreglo de matrículas mostrado arriba.</p>
+
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">user/me</span></div>
+      <p data-i18n="auth_p4">Perfil del usuario actual — <strong>anidado</strong> bajo <code>profile</code>, a diferencia de la respuesta del login:</p>
+      <pre><code>{
+  <span class="tok-key">"id"</span>: <span class="tok-num">11095</span>,
+  <span class="tok-key">"email"</span>: <span class="tok-str">"student@example.com"</span>,
+  <span class="tok-key">"profile"</span>: {
+    <span class="tok-key">"first_name"</span>: <span class="tok-str">"Jesucito"</span>,
+    <span class="tok-key">"last_name"</span>: <span class="tok-str">"Trocha"</span>,
+    <span class="tok-key">"img_big"</span>: <span class="tok-str">"https://resources-abblo..."</span>,
+    <span class="tok-key">"img_small"</span>: <span class="tok-str">"https://resources-abblo..."</span>
+  }
+}</code></pre>
+      <div class="note" data-i18n="auth_note1">Se llama específicamente para refrescar la URL de la foto después de una subida/borrado, porque la respuesta del endpoint de subida no incluye la URL firmada nueva. El móvil debería esperar hacer el mismo ida-y-vuelta.</div>
+
+      <div class="endpoint"><span class="meth post">POST</span><span class="path">user</span></div>
+      <p data-i18n="auth_p5">Registro. Cuerpo: <code>{ first_name, last_name, email, password, id_rol, user_terms, promotions, id_identification_type, identification_number, cellphone, birth_date, id_country, is_active }</code>.</p>
+
+      <h4 data-i18n="auth_pwd_h">Flujos de contraseña</h4>
+      <div class="tablewrap"><table>
+        <tr><th data-i18n="th_endpoint">Endpoint</th><th data-i18n="th_body">Cuerpo</th><th data-i18n="th_auth">Auth</th></tr>
+        <tr><td class="mono"><span class="meth post" style="margin-right:6px">POST</span>user/sendPasswordResetLink</td><td class="mono">{ email }</td><td data-i18n="auth_tr_public">público</td></tr>
+        <tr><td class="mono"><span class="meth post" style="margin-right:6px">POST</span>user/resetPassword</td><td class="mono">{ email: token, password, password_confirmation }</td><td data-i18n="auth_tr_public2">público (token en el cuerpo)</td></tr>
+        <tr><td class="mono"><span class="meth post" style="margin-right:6px">POST</span>user/updatePassword</td><td class="mono">{ old_password, password, password_confirmation }</td><td data-i18n="auth_tr_logged">usuario con sesión iniciada</td></tr>
+      </table></div>
+      <div class="warn" data-i18n="auth_warn1">Las cuentas externas/SSO (<code>userData.is_external_user === true</code>) nunca tienen la opción de "cambiar contraseña" en la UI — confirma con el backend si ese endpoint siquiera funciona para ellas antes de portar este flujo.</div>
+    </section>
+
+    <section id="profile">
+      <h2 data-i18n="s_profile_h2">Perfil y foto</h2>
+      <div class="endpoint"><span class="meth patch">PUT</span><span class="path">user</span></div>
+      <p data-i18n="profile_p1">Actualizar el propio perfil. Cuerpo: <code>{ id_user, first_name, last_name, email, cellphone, id_identification_type, identification_number, id_country, birth_date, username, id_rol, is_active, about_me }</code>. Sin id en la URL — el backend infiere el usuario a partir del token.</p>
+
+      <div class="endpoint"><span class="meth post">POST</span><span class="path">user/image</span></div>
+      <p data-i18n="profile_p2"><code>multipart/form-data</code>, campo <code>image_file</code>. Validación del lado del cliente antes de subir: <strong>solo png/jpg/jpeg, máximo 2&nbsp;MB</strong>. La respuesta no trae la URL firmada nueva — siempre hay que seguirla con <code>GET user/me</code>.</p>
+
+      <div class="endpoint"><span class="meth delete">DELETE</span><span class="path">user/image</span></div>
+      <p data-i18n="profile_p3">Sin cuerpo. Limpia <code>img_big</code>/<code>img_small</code> del lado del cliente si tiene éxito.</p>
+
+      <div class="warn" data-i18n="profile_warn1"><strong>Nota de CORS sobre el bucket de DigitalOcean Spaces:</strong> las fotos de perfil se sirven desde <code>resources-abblo.nyc3.digitaloceanspaces.com</code> como URLs pre-firmadas. Cargan bien como <code>&lt;img&gt;</code>/en cualquier navegador, pero leer sus bytes desde JavaScript (canvas, <code>fetch</code>, cualquier cosa que necesite re-procesar la imagen — ej. generar un PDF del lado del cliente) está bloqueado a menos que la configuración de CORS del bucket permita explícitamente el origen que hace la llamada. Las apps móviles nativas haciendo peticiones HTTP directas a la URL firmada <em>no</em> están sujetas a CORS (es una restricción exclusiva del navegador), así que este problema en particular no debería afectar a Abblo Mobile — pero vale la pena saber que la lista de CORS del bucket por ahora solo incluye los dominios de la app web.</div>
+    </section>
+
+    <section id="navigation">
+      <h2 data-i18n="s_nav_h2">Course → Level → Unit → Lesson → Activity</h2>
+      <p data-i18n="nav_p1">La jerarquía de contenido, de afuera hacia adentro:</p>
+
+      <div class="flow">
+        <div class="step"><div class="num">1</div><div class="body" style="flex:1"><h4 data-i18n="flow1_h">Course (curso)</h4><p data-i18n="flow1_p"><span class="mono">GET course/all</span> — la materia de nivel superior (ej. "English"). Se elige una sola vez en la pantalla de bienvenida.</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">2</div><div class="body" style="flex:1"><h4 data-i18n="flow2_h">Level (nivel)</h4><p data-i18n="flow2_p"><span class="mono">GET course/{idCourse}/levels</span> — los sub-niveles CEFR de ese curso, cada uno con <code>id, name, ordering, img_big</code>.</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">3</div><div class="body" style="flex:1"><h4 data-i18n="flow3_h">Units → Lessons → Activities</h4><p data-i18n="flow3_p"><span class="mono">GET group/{idGroup}/units/activities</span> — <strong>todo el árbol de contenido</strong> de un nivel se trae en una sola llamada, con el alcance acotado al grupo activo del estudiante. Esta única respuesta se cachea del lado del cliente y se usa para toda la navegación dentro del nivel (actividad siguiente/anterior, estado de desbloqueo, progreso).</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">4</div><div class="body" style="flex:1"><h4 data-i18n="flow4_h">Una actividad a la vez</h4><p data-i18n="flow4_p">Una pantalla de Lección muestra exactamente una actividad. Avanzar solo se permite una vez que la actividad <em>actual</em> tiene <code>has_attemp: true</code> — no se puede saltar sin responder. Retroceder no tiene esa restricción.</p></div></div>
+      </div>
+
+      <h4 data-i18n="nav_tree_h">Forma del árbol unit/lesson/activity</h4>
+      <pre><code>[
+  {
+    <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Unit 1"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-num">1</span>, <span class="tok-key">"img_big"</span>: <span class="tok-str">"..."</span>, <span class="tok-key">"video"</span>: <span class="tok-str">"..."</span>,
+    <span class="tok-key">"lessons"</span>: [
+      {
+        <span class="tok-key">"id"</span>: <span class="tok-num">10</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Lesson A"</span>,
+        <span class="tok-key">"activities"</span>: [
+          {
+            <span class="tok-key">"id"</span>: <span class="tok-num">3920</span>, <span class="tok-key">"ordering"</span>: <span class="tok-num">2</span>, <span class="tok-key">"title"</span>: <span class="tok-str">"Clothes"</span>,
+            <span class="tok-key">"can_access"</span>: <span class="tok-bool">true</span>, <span class="tok-key">"has_attemp"</span>: <span class="tok-bool">false</span>,
+            <span class="tok-key">"activity_type"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">8</span>, <span class="tok-key">"code"</span>: <span class="tok-str">"COMP_S(DND)08"</span> }
+          }
+        ]
+      }
+    ]
+  }
+]</code></pre>
+      <p data-i18n="nav_tree_p"><code class="mono">can_access</code> controla si una lección/unidad se muestra bloqueada en la UI; <code class="mono">has_attemp</code> es el flag de completitud por actividad usado en todas partes para saber "si ya está hecha".</p>
+
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">group/{idGroup}/me/position</span></div>
+      <p data-i18n="nav_pos_p">El puntero "retomar donde quedé" del estudiante — devuelve los objetos <code>unit</code>/<code>lesson</code>/<code>activity</code> visitados por última vez, usado para alimentar la tarjeta "Continuar" del dashboard.</p>
+    </section>
+
+    <section id="progress">
+      <h2 data-i18n="s_progress_h2">Seguimiento de progreso</h2>
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">course/{idCourse}/progress/me?page=1&amp;per_page=100</span></div>
+      <p data-i18n="progress_p1">Porcentaje de completitud por nivel — alimenta la UI de "medallas"/insignias de nivel en Home, Perfil y el Reporte Individual.</p>
+      <pre><code>[
+  { <span class="tok-key">"id"</span>: <span class="tok-num">101</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Elementary A1.1"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-num">1</span>, <span class="tok-key">"progress_percentage"</span>: <span class="tok-num">100</span>, <span class="tok-key">"img_big"</span>: <span class="tok-str">"..."</span>, <span class="tok-key">"img_small"</span>: <span class="tok-str">"..."</span> },
+  { <span class="tok-key">"id"</span>: <span class="tok-num">102</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Elementary A1.2"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-num">2</span>, <span class="tok-key">"progress_percentage"</span>: <span class="tok-num">64</span>, <span class="tok-key">"img_big"</span>: <span class="tok-str">"..."</span>, <span class="tok-key">"img_small"</span>: <span class="tok-str">"..."</span> }
+]</code></pre>
+      <div class="warn" data-i18n="progress_warn1"><strong>Supuesto hardcodeado de 6 niveles:</strong> la UI de "medallas" de la app web es un arreglo estático de exactamente 6 espacios, emparejado por posición con esta respuesta según <code>ordering</code>. La app en vivo de hecho mostró <strong>10 niveles</strong> en su selector de nivel durante las pruebas — el móvil debería armar su lista de niveles a partir del largo real de esta respuesta, no copiar el layout fijo de 6 espacios de la web.</div>
+
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">group/{idGroup}/user/{idUser}/grades</span></div>
+      <p data-i18n="progress_p2">Hoja de calificaciones completa por actividad para el grupo activo (opcionalmente <code>?filter_by_id_unit={id}</code>). Cada fila expone <code>activity.has_attemp</code> — sumado contra el total de actividades de la unidad para calcular la barra de progreso dentro de la unidad que se muestra en el dashboard.</p>
+
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">group/{idGroup}/me_skills</span></div>
+      <p data-i18n="progress_p3">Desglose por habilidad para el Reporte Individual (Speaking/Grammar/Writing/Reading/Listening/Vocabulary):</p>
+      <pre><code>{
+  <span class="tok-key">"teacher_name"</span>: <span class="tok-str">"John Doe"</span>, <span class="tok-key">"group_code"</span>: <span class="tok-str">"CODE"</span>, <span class="tok-key">"period"</span>: <span class="tok-str">"20242"</span>, <span class="tok-key">"finish_date"</span>: <span class="tok-str">"December 5"</span>,
+  <span class="tok-key">"progress_percentage"</span>: <span class="tok-num">79.1</span>, <span class="tok-key">"course_advance_percentage"</span>: <span class="tok-num">83.6</span>,
+  <span class="tok-key">"completed_activities"</span>: <span class="tok-num">189</span>, <span class="tok-key">"pending_activities"</span>: <span class="tok-num">37</span>, <span class="tok-key">"average_attempts"</span>: <span class="tok-num">1.6</span>,
+  <span class="tok-key">"skills"</span>: [
+    { <span class="tok-key">"name"</span>: <span class="tok-str">"Grammar"</span>, <span class="tok-key">"value"</span>: <span class="tok-num">0</span> },
+    { <span class="tok-key">"name"</span>: <span class="tok-str">"Listening"</span>, <span class="tok-key">"value"</span>: <span class="tok-num">0</span> }
+  ]
+}</code></pre>
+      <div class="note" data-i18n="progress_note1"><strong>Este es el único lugar donde aparece <code>average_attempts</code>.</strong> Es un agregado pre-calculado del lado del servidor, específico de este endpoint de reporte — no hay lógica de promedio del lado del cliente que portar, y ningún otro endpoint lo expone. Si el móvil lo necesita en otro lado, tiene que venir del backend, no derivarse localmente de <code>actual_attempts</code>.</div>
+    </section>
+
+    <section id="activities-overview">
+      <h2 data-i18n="s_act_overview_h2">Cómo funciona una actividad</h2>
+      <p data-i18n="act_overview_p1">Este es el corazón del producto. Un mismo esquema de respuesta del backend es compartido por todas las actividades, y el frontend se ramifica fuertemente según <code class="mono">activity_type.code</code> para decidir cómo renderizarla y cómo armar la respuesta que envía.</p>
+
+      <h3 data-i18n="act_fetch_h3">Pidiendo una actividad</h3>
+      <div class="tablewrap"><table>
+        <tr><th data-i18n="th_when">Cuándo</th><th data-i18n="th_endpoint2">Endpoint</th></tr>
+        <tr><td data-i18n="act_tr1">Iniciar / continuar un intento</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>activity/{idActivity}/group/{idGroup}/attempt</td></tr>
+        <tr><td data-i18n="act_tr2">Revisar mi propio intento ya enviado</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>activity/{idActivity}/group/{idGroup}/review</td></tr>
+        <tr><td data-i18n="act_tr3">El docente revisa a un estudiante específico</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>activity/{idActivity}/group/{idGroup}/user/{idStudent}/review</td></tr>
+      </table></div>
+      <p data-i18n="act_overview_p2">Si la app llama a <em>attempt</em> o a <em>review</em> para una actividad dada se decide puramente del lado del cliente, a partir del flag <code>has_attemp</code> de esa actividad en el árbol de contenido cacheado: <code>has_attemp ? "review" : "attemp"</code>.</p>
+      <div class="warn" data-i18n="act_warn1">Llamar a <strong>attempt</strong> no es idempotente — pegarle registra un intento nuevo del lado del servidor. El backend lo ha rechazado en pruebas con: <code>"Before creating an attempt, the sum of the contents qualify weigth of the activity must be 100%"</code> — una validación de autoría de contenido, no un bug del cliente, pero vale la pena manejarlo con cuidado en la UI del móvil.</div>
+
+      <h3 data-i18n="act_envelope_h3">El sobre de la respuesta (forma compartida)</h3>
+      <pre><code>{
+  <span class="tok-key">"title"</span>: <span class="tok-str">"Clothes"</span>,
+  <span class="tok-key">"activity_type"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">8</span>, <span class="tok-key">"code"</span>: <span class="tok-str">"COMP_S(DND)08"</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"COMPLETE SENTENCE (Drag and Drop)"</span>, <span class="tok-key">"auto_evaluation"</span>: <span class="tok-bool">true</span> },
+  <span class="tok-key">"activity_category"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Challenge"</span> },
+  <span class="tok-key">"content_text"</span>: <span class="tok-str">"&lt;p&gt;Instrucciones como HTML con formato&lt;/p&gt;"</span>,
+  <span class="tok-key">"actual_attempts"</span>: <span class="tok-num">0</span>,
+  <span class="tok-key">"right_answers_contents_ids"</span>: [],
+  <span class="tok-key">"bad_answers_contents_ids"</span>: [],
+  <span class="tok-key">"content"</span>: [ <span class="tok-str">"… una entrada por pregunta/espacio, la forma varía según activity_type"</span> ],
+  <span class="tok-key">"activity_resource"</span>: [ <span class="tok-str">"… imágenes/audio/video mostrados junto a la actividad"</span> ],
+  <span class="tok-key">"id_activity_percentage"</span>: <span class="tok-num">3050020</span>
+}</code></pre>
+      <p data-i18n="act_envelope_p"><code class="mono">id_activity_percentage</code> es importante: es el id del <em>registro de calificación de este estudiante</em> para esta actividad, y es lo que se pide después para obtener el desglose calificado (ver <a href="#submitting">Enviar respuestas</a>).</p>
+    </section>
+
+    <section id="activity-types">
+      <h2 data-i18n="s_types_h2">Los tipos de actividad</h2>
+      <p data-i18n="types_p1">Hay <strong>24 tipos de actividad distintos</strong> en producción, cada uno con su propio widget de interacción y su propio esquema de contenido. Esta sección va al detalle exacto: cómo se parte el texto con <code>%s</code>, y cómo exactamente el frontend lee la corrección/porcentaje de la respuesta del backend — con el código real de <code>src/services/GetDataActivity.ts</code> como fuente. Haz clic en cualquier fila.</p>
+
+      <h3 data-i18n="pct_groups_h3">Seis formas distintas de leer "¿está correcto?"</h3>
+      <p data-i18n="pct_groups_p">El backend no devuelve un único campo de corrección consistente. Según el tipo de actividad, el frontend lee uno de estos seis patrones:</p>
+      <div class="tablewrap"><table>
+        <tr><th data-i18n="pct_th_group">Patrón</th><th data-i18n="pct_th_formula">Qué hace el frontend</th><th data-i18n="pct_th_types">Tipos</th></tr>
+        <tr><td data-i18n="pct_g1_name"><strong>Lista de ids</strong></td><td class="mono">getCheckAnswer(id, right_answers_contents_ids, bad_answers_contents_ids)</td><td data-i18n="pct_g1_types">W_ANS04, LSTN_REC06, LSTN_REC0BYROLE7, W_PARAGRAPH19</td></tr>
+        <tr><td data-i18n="pct_g2_name"><strong>Booleano <code>&gt; 0</code></strong></td><td class="mono">item.percentage &gt; 0</td><td data-i18n="pct_g2_types">MAT(LINE)07, ORD_S(DND)03, TREE(DnD)13, COMP_S(WRT)12</td></tr>
+        <tr><td data-i18n="pct_g3_name"><strong>Igualdad estricta (bug)</strong></td><td class="mono">item.percentage === item.qualify_weigth</td><td data-i18n="pct_g3_types">LSTN10, AUD_GREET18</td></tr>
+        <tr><td data-i18n="pct_g4_name"><strong>Porcentaje crudo</strong></td><td class="mono">percentage</td><td data-i18n="pct_g4_types">W_ANS(Opt_pro)17, T_F15, M_CHOICE20, AUD_PTR_MATCH23</td></tr>
+        <tr><td data-i18n="pct_g5_name"><strong>Sin calificar</strong></td><td class="mono">—</td><td data-i18n="pct_g5_types">LSTN_AUD01, CLK_PTR22, BIOC_ACT01, W_MEDIA02, LSTN_READ21, ALPH_NUM09</td></tr>
+        <tr><td data-i18n="pct_g6_name"><strong>Heurística a medida</strong></td><td class="mono">isBlankOrderCorrect() / 5 reglas / percentage_details</td><td data-i18n="pct_g6_types">COMP_S(DND)08, COMP_S(SEL)11, MAT(DND)05</td></tr>
+      </table></div>
+      <div class="warn" data-i18n="pct_groups_warn"><strong>Para el móvil:</strong> no existe "una" regla de corrección a portar — hay que replicar la lógica tipo por tipo. El patrón de <strong>igualdad estricta</strong> es, además, un bug conocido: el backend manda <code>percentage</code> como número y <code>qualify_weigth</code> como string (<code>20</code> vs <code>"20.00"</code>), así que <code>===</code> puede dar falso incluso cuando la respuesta sí es 100% correcta.</div>
+
+      <details open>
+        <summary><span>COMP_S(DND)08 — Complete Sentence (Drag &amp; Drop)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">words_in_holes</span></summary>
+        <div class="inner">
+          <h4 data-i18n="d_dnd_s_h">Cómo se parte el <code>%s</code></h4>
+          <p data-i18n="d_dnd_s_p1">El banco de palabras completo sale de <strong>un solo lugar</strong>: <code>content[0].content_option[0].text</code>, partido por <code>%s</code> y recortado — ej. <code>"blazer %s boots %s coat"</code> → <code>["blazer","boots","coat"]</code>. Ese arreglo se mezcla una vez (<code>Ramdom()</code>) y se reutiliza como <code>arrayWords</code> para <strong>todas</strong> las preguntas de la actividad, no una lista distinta por pregunta.</p>
+          <p data-i18n="d_dnd_s_p2">Cada oración (<code>content[i].text</code>, ej. <code>"casual wear: %s %s %s %s"</code>) se parte con <code>text.split(/(%s)/)</code> — como la regex usa un grupo de captura, el propio marcador <code>%s</code> queda <strong>dentro</strong> del arreglo resultante en vez de desaparecer. Eso es lo que le permite a la UI saber exactamente dónde dibujar cada casilla para soltar una palabra, intercalada con el texto literal.</p>
+          <h4 data-i18n="d_dnd_c_h">Cómo se interpreta la corrección</h4>
+          <p data-i18n="d_dnd_c_p1">El backend <strong>no penaliza el orden</strong> para este tipo — si el estudiante usó las palabras correctas en cualquier orden, igual regresa <code>percentage === qualify_weigth</code> (100%). El frontend corrige esto por su cuenta con <code>isBlankOrderCorrect(template, userAnswer, rightAnswer)</code>: aplica la misma función <code>extractBlanksFromTemplate</code> a la respuesta del usuario y a la <code>right_answer</code> del backend (convierte la plantilla con <code>%s</code> en una expresión regular con grupos <code>(.*?)</code> por cada hueco) y compara, hueco por hueco, si las palabras extraídas coinciden en la misma posición.</p>
+          <pre><code><span class="tok-key">resultado</span> = orderCorrect !== <span class="tok-bool">null</span>
+  ? orderCorrect                                          <span class="tok-str">// comparación propia, por orden</span>
+  : <span class="tok-key">Number</span>(item.percentage) === <span class="tok-key">Number</span>(item.qualify_weigth)  <span class="tok-str">// si no se pudo parsear, usa el % del backend</span></code></pre>
+          <p data-i18n="d_dnd_c_p2">Para el desglose palabra por palabra: si <code>content_option[0].attempt_report.data.results</code> viene vacío (pasa seguido), el frontend lo <strong>reconstruye a mano</strong> — recorta el prefijo literal de la oración tanto de la respuesta del usuario como de la <code>right_answer</code>, y luego va comparando palabra por palabra contra la lista completa de palabras posibles (ordenadas de más larga a más corta, para no hacer match parcial), marcando cada una <code>"correct"</code>/<code>"wrong"</code> según si coincide exactamente con la de <code>right_answer</code> en esa posición.</p>
+          <p class="src" data-i18n="d_dnd_src">Ver <a href="#live-example">Ejemplo real capturado</a> para el JSON crudo completo de este tipo.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>COMP_S(SEL)11 — Complete Sentence (Select)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">words_in_holes</span></summary>
+        <div class="inner">
+          <h4 data-i18n="d_sel_s_h">Cómo se parte el <code>%s</code></h4>
+          <p data-i18n="d_sel_s_p1"><code>sentences = item.text.split(/(%s)/)</code> — igual que DND, conserva el marcador <code>%s</code> en el arreglo para saber dónde va el desplegable. Las <strong>opciones</strong> del desplegable salen de <code>content_option[0].text.split("%s")</code> (recortadas y mezcladas con <code>Ramdom()</code>) — a diferencia de DND, aquí sí hay un <code>content_option</code> con sus propias opciones por cada pregunta, en vez de un único banco global.</p>
+          <h4 data-i18n="d_sel_c_h">Cómo se interpreta la corrección (la más compleja de toda la app)</h4>
+          <p data-i18n="d_sel_c_p1">El frontend aplica <strong>cinco reglas en cascada</strong>, en este orden exacto, porque se observó que los campos del backend se contradicen entre sí:</p>
+          <ol>
+            <li data-i18n="d_sel_li1"><strong>Reconstrucción cuando faltan resultados:</strong> si <code>attempt_report.data.results</code> viene vacío pero sí llega <code>user_answer</code>, el frontend recorta el prefijo/sufijo literal de la plantilla alrededor del <code>%s</code> (<code>template.split("%s")</code>) para extraer solo la palabra elegida.</li>
+            <li data-i18n="d_sel_li2"><strong><code>allDetailsCorrect</code>:</strong> si cada entrada de <code>results</code> dice <code>"correct"</code> o <code>"right"</code>, se considera correcto aunque <code>percentage</code> diga otra cosa.</li>
+            <li data-i18n="d_sel_li3"><strong>Comparación de string exacta (la más confiable):</strong> si <code>item.answer.trim() === attempt_report.right_answer.trim()</code>, es correcto sin importar nada más — se le da más peso que a cualquier otro campo.</li>
+            <li data-i18n="d_sel_li4"><strong><code>bad_answers_contents_ids</code>:</strong> si el id del contenido está explícitamente en esa lista, se marca incorrecto.</li>
+            <li data-i18n="d_sel_li5"><strong>Respaldo final:</strong> <code>item.percentage &gt; 0 || allDetailsCorrect</code>.</li>
+          </ol>
+          <pre><code>correct = answerMatchesRightAnswer
+  ? <span class="tok-bool">true</span>
+  : isExplicitlyBad
+  ? <span class="tok-bool">false</span>
+  : (item.percentage > <span class="tok-num">0</span> || allDetailsCorrect)</code></pre>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>W_ANS04 — Write Answer</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_answer</span></summary>
+        <div class="inner">
+          <p data-i18n="d_wans_p1"><strong><code>%s</code>:</strong> cada <code>content[i].text</code> trae como mucho un <code>%s</code>, que se reemplaza directamente por guiones bajos para mostrarlo: <code>item.text.replaceAll("%s", "____")</code> — es puramente visual, no se usa para extraer nada.</p>
+          <p data-i18n="d_wans_p2"><strong>Corrección:</strong> no se usa <code>percentage</code> en absoluto. Cada respuesta se clasifica comparando su <code>id</code> contra dos arreglos de nivel superior de la actividad: <code>getCheckAnswer(id, right_answers_contents_ids, bad_answers_contents_ids)</code> devuelve <code>"right"</code>, <code>"bad"</code> o <code>"none"</code> según en cuál lista aparezca el id.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>ORD_S(DND)03 — Order the Sentence (Drag &amp; Drop)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_answer</span></summary>
+        <div class="inner">
+          <p data-i18n="d_ord_p1"><strong>Fichas:</strong> las palabras a ordenar vienen de <code>content_option[0].text</code> con <code>splitText: true</code> — el componente las separa por su cuenta en la UI (no hay <code>%s</code> aquí, es una sola oración desordenada).</p>
+          <p data-i18n="d_ord_p2"><strong>Corrección:</strong> <code>item.percentage &gt; 0</code>. El desglose palabra por palabra SÍ viene listo del backend en <code>content_option[0].attempt_report.data.results</code> — el frontend solo recorre esa lista y, para cada palabra marcada <code>"wrong"</code>, muestra <code>correct_word</code> en vez de lo que escribió el estudiante.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>COMP_S(WRT)12 — Complete Sentence (Writing)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">words_in_holes</span></summary>
+        <div class="inner">
+          <p data-i18n="d_wrt_p1"><strong><code>%s</code>:</strong> igual que DND/Select, <code>item.text.split(/(%s)/)</code> conservando el marcador, pero aquí cada <code>%s</code> se reemplaza en la UI por un campo de texto en vez de un espacio para arrastrar o un desplegable.</p>
+          <p data-i18n="d_wrt_p2"><strong>Corrección:</strong> <code>item.percentage &gt; 0</code>. El resultado y la plantilla para mostrar el detalle salen directo de <code>content_option[0].attempt_report.data.results</code> / <code>.template</code>, sin reconstrucción propia como en DND.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>MAT(LINE)07 — Match (líneas)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_son</span></summary>
+        <div class="inner"><p data-i18n="t_matline_p1"><code>questions</code> + <code>answers</code> mezcladas, cada elemento puede ser texto, imagen o audio (el tipo se infiere del <code>widget</code> del content, o de la extensión del archivo en <code>content_type</code> para las respuestas). <strong>Corrección:</strong> <code>item.percentage &gt; 0</code>, sin comparar contra <code>qualify_weigth</code>.</p></div>
+      </details>
+
+      <details>
+        <summary><span>TREE(DnD)13 — Árbol genealógico (Drag &amp; Drop)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_son</span></summary>
+        <div class="inner"><p data-i18n="t_tree_p1">Arrastrar nombres hacia un diagrama de árbol genealógico; las opciones solo llevan <code>content_type</code> (audio), sin texto propio. <strong>Corrección:</strong> <code>item.percentage &gt; 0</code>.</p></div>
+      </details>
+
+      <details>
+        <summary><span>MAT(DND)05 — Match (Drag &amp; Drop)</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_son_multiple</span></summary>
+        <div class="inner">
+          <p data-i18n="d_matdnd_p1">Como el emparejamiento por líneas, pero una pregunta puede tener <em>varias</em> respuestas — se envían como <code>answer: "501,502,503"</code> (ids separados por coma).</p>
+          <p data-i18n="d_matdnd_p2"><strong>Corrección — el único tipo con <code>percentage_details</code>:</strong> en vez de leer <code>item.percentage</code>, el frontend parte <code>answer</code> por coma y, <strong>por cada id seleccionado</strong>, busca su propia entrada dentro de <code>question.percentage_details</code> (un arreglo con un <code>{ id, correct }</code> por cada opción posible) — así puede marcar una selección múltiple como "2 de 3 correctas" en vez de un solo booleano para toda la pregunta.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>LSTN_REC06 / LSTN_REC0BYROLE7 — Escuchar y grabar / Juego de roles</span></summary>
+        <div class="inner">
+          <p data-i18n="d_rec_p1"><strong><code>LSTN_REC06</code>:</strong> si <code>item.text</code> contiene <code>%s</code>, se parte en dos con <code>split("%s")</code>: la parte antes es el <code>name</code> (quién habla) y la de después es el <code>text</code> (la línea). Si no hay <code>%s</code>, todo el texto pasa como <code>text</code> y no hay <code>name</code>.</p>
+          <p data-i18n="d_rec_p2"><strong><code>LSTN_REC0BYROLE7</code> (juego de roles):</strong> primero separa <code>observations.split(/(%s)/)</code> para sacar los nombres de los dos roles (<code>roles[0]</code> y <code>roles[2]</code>, limpiando HTML inyectado con <code>DOMParser</code>). Luego, por cada línea de diálogo, vuelve a partir <code>item.text</code> por <code>%s</code> para obtener de quién es el turno — y le quita los dos puntos finales (<code>"Emma:" → "Emma"</code>) con <code>.replace(/\s*:\s*$/, "")</code>, porque si no, nunca calza exactamente con el nombre sacado de <code>observations</code> y la grabadora no resalta ningún turno.</p>
+          <p data-i18n="d_rec_p3"><strong>Corrección:</strong> ninguno de los dos se autocalifica — ambos usan <code>getCheckAnswer()</code> contra <code>right_answers_contents_ids</code>/<code>bad_answers_contents_ids</code>, que el backend llena después de que un docente califica el audio manualmente vía <code>activitypercentage/{id}/full</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span>W_PARAGRAPH19 — Escribir párrafo</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_answer</span></summary>
+        <div class="inner"><p data-i18n="t_para_p1">Escritura libre más larga, sin <code>%s</code> (un solo campo abierto por contenido). <strong>Corrección:</strong> igual que W_ANS04, vía <code>getCheckAnswer()</code> — calificación manual del docente, lleva <code>activity_percentage.feedback</code>.</p></div>
+      </details>
+
+      <details>
+        <summary><span>W_ANS(Opt_pro)17 — Write Answer (opción pro)</span></summary>
+        <div class="inner"><p data-i18n="t_wansopt_p1">Como <code>W_ANS04</code> pero <strong>no</strong> usa <code>getCheckAnswer()</code> — devuelve el <code>percentage</code> crudo de cada respuesta (<code>review.answers[].percentage</code>) y es quien consume el dato el que tiene que decidir un umbral de "correcto".</p></div>
+      </details>
+
+      <details>
+        <summary><span>T_F15 — Verdadero o Falso</span></summary>
+        <div class="inner"><p data-i18n="d_tf_p1"><strong><code>%s</code>:</strong> el enunciado reemplaza <code>%s</code> por guiones bajos igual que W_ANS04 (<code>text.replace(/\n/g,"").replaceAll("%s","____")</code>); las dos opciones (Verdadero/Falso, o las que sean) salen de <code>content_option[0].text.split("%s")</code>. <strong>Corrección:</strong> devuelve <code>percentage</code> crudo por respuesta, sin booleano calculado.</p></div>
+      </details>
+
+      <details>
+        <summary><span>M_CHOICE20 — Opción múltiple</span></summary>
+        <div class="inner"><p data-i18n="t_mchoice_p1">MCQ estándar, sin manipulación de <code>%s</code> en el contenido en sí. <strong>Corrección:</strong> <code>percentage</code> crudo por respuesta. Esta es también la <em>única</em> forma que renderiza el módulo de Tests, sin importar el tipo real de la actividad subyacente — ver <a href="#tests">Tests</a>.</p></div>
+      </details>
+
+      <details>
+        <summary><span>AUD_PTR_MATCH23 — Emparejar audio e imagen</span></summary>
+        <div class="inner"><p data-i18n="d_audptr_p1"><strong><code>%s</code>:</strong> se reemplaza por guiones bajos igual que W_ANS04/T_F15. <strong>Corrección:</strong> trae tanto el <code>percentage</code> crudo como, cuando el intento ya se procesó (<code>attempt_report.state === 200</code>), el texto de <code>attempt_report.right_answer</code> para mostrar cuál era la respuesta correcta.</p></div>
+      </details>
+
+      <details>
+        <summary><span>LSTN_AUD01 / LSTN_READ21 / CLK_PTR22 — Sin calificar</span></summary>
+        <div class="inner"><p data-i18n="d_noscore_p1"><code>LSTN_AUD01</code> y <code>LSTN_READ21</code> ni siquiera tienen bloque <code>review</code> — solo reproducir/leer. <code>CLK_PTR22</code> sí tiene <code>review.answers</code>, pero es solo un arreglo plano de ids de contenido (sin corrección) — autocomprobación, no calificación real.</p></div>
+      </details>
+
+      <details>
+        <summary><span>LSTN10 — Listen</span></summary>
+        <div class="inner"><p data-i18n="d_lstn10_p1"><strong><code>%s</code>:</strong> si <code>item.text</code> lo trae, se parte en <code>name</code>/<code>text</code> igual que LSTN_REC06. <strong>Corrección (bug conocido):</strong> <code>item.percentage === item.qualify_weigth</code> con <code>===</code> estricto — sin el <code>Number()</code> que sí usan otros tipos, así que puede fallar si uno llega como número y el otro como string.</p></div>
+      </details>
+
+      <details>
+        <summary><span>AUD_GREET18 — Saludos en audio</span></summary>
+        <div class="inner"><p data-i18n="t_greet_p1">Sin <code>%s</code> en el contenido. <strong>Corrección (mismo bug que LSTN10):</strong> <code>item.percentage === item.qualify_weigth</code>, comparación estricta sin coerción de tipos.</p></div>
+      </details>
+
+      <details>
+        <summary><span>MAT_CARD_PAIRS16 / MAT_CARD_PAIRS1701 — Memory / Pares extendidos</span><span class="mono" style="font-weight:400;color:var(--text-dim)">match_answer</span></summary>
+        <div class="inner"><p data-i18n="d_pairs_p1">Cada par <code>content[i]</code> + <code>content_option[0]</code> se aplana en <strong>dos</strong> "cartas" separadas que comparten un índice <code>match: index</code>, y luego se mezclan juntas en un mazo con <code>Ramdom()</code>. No hay <code>%s</code> ni <code>percentage</code> por carta — la validación de "¿emparejó bien?" es puramente del lado del cliente, comparando que las dos cartas volteadas compartan el mismo <code>match</code>.</p></div>
+      </details>
+
+      <details>
+        <summary><span>BIOC_ACT01 / W_MEDIA02 — Solo informativos</span></summary>
+        <div class="inner"><p data-i18n="d_info_p1">Ninguno de los dos trae objeto <code>review</code> en la respuesta — no son calificables, solo presentan contenido (biografías / video-imagen-audio).</p></div>
+      </details>
+
+      <details>
+        <summary><span>ALPH_NUM09 — Alfabeto o números</span></summary>
+        <div class="inner"><p data-i18n="t_alph_p1">Divide <code>content</code> en <code>letters</code> (<code>text.length &lt;= 1</code>) vs. <code>words</code> (<code>text.length &gt; 1</code>), cada uno con su propio audio de pronunciación. Sin <code>%s</code>, sin calificación — es práctica de pronunciación.</p></div>
+      </details>
+
+      <div class="warn" data-i18n="types_warn1">Algunas carpetas bajo <code>Activity/</code> en el repositorio (<code>Challenge1C21</code>, <code>Challenge_1B41</code>, <code>Challenge_1C31</code>, <code>Challenge_1D12</code>, <code>Challenge_2D12</code>, <code>completeSentences</code>) existen pero <strong>no están conectadas al switch</strong> que elige un componente a partir de <code>activity_type.code</code>. Confirma con el equipo si son legado o están en progreso antes de tratarlas como parte del catálogo real.</div>
+    </section>
+
+    <section id="process-field">
+      <h2 data-i18n="s_process_h2">El campo <code>process</code></h2>
+      <p data-i18n="process_p1"><code>process</code> no es un tipo de actividad — es una pista por elemento de contenido que se envía <em>junto con la respuesta</em>, diciéndole al motor de calificación del backend cómo validar esa pieza específica. Aparecen cuatro valores en todo el código:</p>
+      <div class="tablewrap"><table>
+        <tr><th data-i18n="th_value">Valor</th><th data-i18n="th_meaning">Significado</th><th data-i18n="th_usedby">Usado por</th></tr>
+        <tr><td class="mono">match_answer</td><td data-i18n="proc_tr1">Comparación de igualdad directa contra una sola respuesta correcta</td><td data-i18n="proc_tr1u">La mayoría de los tipos — W_ANS04, tipo MCQ, pares de memoria, orden, tipos de clic/toque</td></tr>
+        <tr><td class="mono">words_in_holes</td><td data-i18n="proc_tr2">Varios espacios en una sola oración; se valida la oración completa reconstruida contra una plantilla</td><td data-i18n="proc_tr2u">COMP_S(DND)08, COMP_S(SEL)11, COMP_S(WRT)12</td></tr>
+        <tr><td class="mono">match_son</td><td data-i18n="proc_tr3">Emparejamiento uno a uno (padre → un id hijo)</td><td data-i18n="proc_tr3u">MAT(LINE)07, TREE(DnD)13</td></tr>
+        <tr><td class="mono">match_son_multiple</td><td data-i18n="proc_tr4">Una pregunta se empareja con varios ids seleccionados (unidos por coma)</td><td data-i18n="proc_tr4u">MAT(DND)05</td></tr>
+      </table></div>
+    </section>
+
+    <section id="submitting">
+      <h2 data-i18n="s_submit_h2">Enviar respuestas</h2>
+      <p data-i18n="submit_p1">Un solo servicio compartido (<code>GetResultsActivity</code>) maneja el envío para prácticamente todos los tipos de actividad dentro de una lección. Es un ida-y-vuelta de dos pasos:</p>
+
+      <div class="flow">
+        <div class="step"><div class="num">1</div><div class="body" style="flex:1">
+          <h4 data-i18n="submit_step1_h">Enviar las respuestas</h4>
+          <div class="endpoint" style="margin-top:6px"><span class="meth post">POST</span><span class="path">activity/{idActivity}/group/{idGroup}/answers</span></div>
+          <pre><code>{
+  <span class="tok-key">"contents"</span>: [
+    { <span class="tok-key">"id"</span>: <span class="tok-num">101</span>, <span class="tok-key">"id_content_option"</span>: <span class="tok-num">501</span>, <span class="tok-key">"process"</span>: <span class="tok-str">"match_answer"</span>, <span class="tok-key">"answer"</span>: <span class="tok-str">"John"</span> },
+    { <span class="tok-key">"id"</span>: <span class="tok-num">102</span>, <span class="tok-key">"id_content_option"</span>: <span class="tok-num">502</span>, <span class="tok-key">"process"</span>: <span class="tok-str">"words_in_holes"</span>, <span class="tok-key">"answer"</span>: <span class="tok-str">"before noon"</span> }
+  ]
+}</code></pre>
+          <p data-i18n="submit_step1_p">Si tiene éxito, la app también vuelve a pedir todo el árbol de unidad/lección/actividad en segundo plano, para que el estado de desbloqueo y las barras de progreso se actualicen de inmediato.</p>
+        </div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">2</div><div class="body" style="flex:1">
+          <h4 data-i18n="submit_step2_h">Pedir el desglose calificado</h4>
+          <div class="endpoint" style="margin-top:6px"><span class="meth get">GET</span><span class="path">activitypercentage/{id_activity_percentage}</span></div>
+          <pre><code>{
+  <span class="tok-key">"attempt"</span>: <span class="tok-num">2</span>,
+  <span class="tok-key">"activity_contents_percentages"</span>: [
+    { <span class="tok-key">"percentage"</span>: <span class="tok-num">100</span>, <span class="tok-key">"answer"</span>: <span class="tok-str">"John"</span>, <span class="tok-key">"content"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">101</span>, <span class="tok-key">"qualify_weigth"</span>: <span class="tok-str">"100.00"</span> } },
+    { <span class="tok-key">"percentage"</span>: <span class="tok-num">0</span>,   <span class="tok-key">"answer"</span>: <span class="tok-str">"wrong text"</span>, <span class="tok-key">"content"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">102</span>, <span class="tok-key">"qualify_weigth"</span>: <span class="tok-str">"50.00"</span> } }
+  ]
+}</code></pre>
+          <p data-i18n="submit_step2_p">El frontend reduce esto a <code>{ totalContents, totalCorrects, totalIncorrects, percentage, answers: [{id, correct}] }</code> para la UI.</p>
+        </div></div>
+      </div>
+
+      <div class="warn" data-i18n="submit_warn1"><strong>Bug de coerción de tipos a tener en cuenta:</strong> la corrección se calcula como <code>Number(percentage) === Number(qualify_weigth)</code> en la mayoría de los lugares, específicamente porque el backend envía <code>percentage</code> como número pero <code>qualify_weigth</code> como un string numérico (<code>20</code> vs <code>"20.00"</code>). Algunos tipos de actividad (<code>LSTN10</code>, <code>AUD_GREET18</code>, y el propio manejador de envío del componente Unscrambell) todavía usan <code>===</code> estricto sin coerción — un bug de corrección latente que el equipo móvil no debería copiar.</div>
+    </section>
+
+    <section id="attempts">
+      <h2 data-i18n="s_attempts_h2">Modelo de intentos</h2>
+      <p data-i18n="attempts_p1">No hay ningún contador de intentos del lado del cliente en todo este código base. Los intentos son enteramente estado del lado del servidor, creado como efecto secundario de llamar al propio endpoint de <strong>attempt</strong>.</p>
+
+      <div class="grid2">
+        <div class="card">
+          <h4><code class="mono">actual_attempts</code></h4>
+          <p style="margin:0" data-i18n="att_card1">Entero reportado por el backend, por estudiante y por actividad. Cada componente de actividad lo lee para deshabilitar su botón de "repetir" una vez que se llega al máximo.</p>
+        </div>
+        <div class="card">
+          <h4><code class="mono">has_attemp</code></h4>
+          <p style="margin:0" data-i18n="att_card2">Booleano en cada nodo de actividad dentro del árbol de contenido. Es la verdadera condición para "modo review vs. attempt" y para si el botón "Siguiente" de la Lección está habilitado — distinto del contador numérico de arriba.</p>
+        </div>
+        <div class="card">
+          <h4><code class="mono">attempt_report</code></h4>
+          <p style="margin:0" data-i18n="att_card3">Objeto de detalle por <code>content_option</code>: <code>{ state, right_answer, data: { results, user_answer, template } }</code>. Muy explotado por los tipos de actividad de arrastrar/ordenar/seleccionar para armar desgloses correcto/incorrecto palabra por palabra.</p>
+        </div>
+        <div class="card">
+          <h4><code class="mono">MAX_ATTEMPTS</code></h4>
+          <p style="margin:0" data-i18n="att_card4">Constante del lado del frontend, no se pide al backend: <strong>5</strong> en producción, <strong>100</strong> en el build de dev. Una vez que <code>actual_attempts &gt;= MAX_ATTEMPTS</code>, los botones de reintentar desaparecen.</p>
+        </div>
+      </div>
+
+      <div class="note" data-i18n="attempts_note1"><strong>Sobre <code>average_attempts</code>:</strong> no existe en ninguna parte de la lógica de este frontend — es un agregado de solo reporte que viene pre-calculado desde <code>group/{idGroup}/me_skills</code> (ver <a href="#progress">Progreso</a>). No hay ninguna fórmula que portar; trátalo como un valor del backend para mostrar, no para calcular.</div>
+    </section>
+
+    <section id="live-example">
+      <h2 data-i18n="s_live_h2">Ejemplo real capturado</h2>
+      <p data-i18n="live_p1">Capturado en vivo desde una lección real en esta sesión (cuenta <code>758418923</code>, API de producción) — una actividad <code>COMP_S(DND)08</code> "Complete Sentence (Drag &amp; Drop)" sobre vocabulario de ropa, antes de cualquier intento:</p>
+      <div class="endpoint"><span class="meth get">GET</span><span class="path">activity/3920/group/3678/attempt</span></div>
+      <pre><code>{
+  <span class="tok-key">"title"</span>: <span class="tok-str">"Clothes"</span>,
+  <span class="tok-key">"activity_type"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">8</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"COMPLETE SENTENCE (Drag and Drop)"</span>,
+    <span class="tok-key">"code"</span>: <span class="tok-str">"COMP_S(DND)08"</span>, <span class="tok-key">"auto_evaluation"</span>: <span class="tok-bool">true</span>
+  },
+  <span class="tok-key">"activity_category"</span>: { <span class="tok-key">"id"</span>: <span class="tok-num">1</span>, <span class="tok-key">"description"</span>: <span class="tok-str">"Challenge"</span> },
+  <span class="tok-key">"activity_popup"</span>: {
+    <span class="tok-key">"id"</span>: <span class="tok-num">8</span>, <span class="tok-key">"name"</span>: <span class="tok-str">"Don't Rush, Place the Words Correctly!"</span>,
+    <span class="tok-key">"description"</span>: <span class="tok-str">"Remember to organize the words or phrases in alphabetical order"</span>
+  },
+  <span class="tok-key">"content_text"</span>: <span class="tok-str">"&lt;p&gt;Now, drag and drop the words from the box to answer the questions below.&lt;/p&gt;"</span>,
+  <span class="tok-key">"ordering"</span>: <span class="tok-str">"2.00"</span>, <span class="tok-key">"visual_ordering"</span>: <span class="tok-str">"1.1"</span>,
+  <span class="tok-key">"content"</span>: [
+    {
+      <span class="tok-key">"id"</span>: <span class="tok-num">23706</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"casual wear: %s %s %s %s"</span>,
+      <span class="tok-key">"qualify_weigth"</span>: <span class="tok-str">"25.00"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-str">"1.00"</span>,
+      <span class="tok-key">"content_option"</span>: [{
+        <span class="tok-key">"id"</span>: <span class="tok-num">24994</span>,
+        <span class="tok-key">"text"</span>: <span class="tok-str">"blazer %s boots %s coat %s dress shirt %s ... %s windbreaker"</span>
+      }]
+    },
+    { <span class="tok-key">"id"</span>: <span class="tok-num">23707</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"formal wear: %s %s %s %s"</span>, <span class="tok-key">"qualify_weigth"</span>: <span class="tok-str">"25.00"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-str">"2.00"</span> },
+    { <span class="tok-key">"id"</span>: <span class="tok-num">23708</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"outerwear: %s %s %s %s"</span>, <span class="tok-key">"qualify_weigth"</span>: <span class="tok-str">"25.00"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-str">"3.00"</span> },
+    { <span class="tok-key">"id"</span>: <span class="tok-num">23709</span>, <span class="tok-key">"text"</span>: <span class="tok-str">"footwear: %s %s %s %s"</span>, <span class="tok-key">"qualify_weigth"</span>: <span class="tok-str">"25.00"</span>, <span class="tok-key">"ordering"</span>: <span class="tok-str">"4.00"</span> }
+  ],
+  <span class="tok-key">"activity_resource"</span>: [
+    { <span class="tok-key">"id"</span>: <span class="tok-num">2570</span>, <span class="tok-key">"image"</span>: <span class="tok-str">"https://resources-abblo.../52a2...png?X-Amz-Signature=..."</span> },
+    { <span class="tok-key">"id"</span>: <span class="tok-num">2571</span>, <span class="tok-key">"image"</span>: <span class="tok-str">"https://resources-abblo.../46ec...png?X-Amz-Signature=..."</span> }
+  ],
+  <span class="tok-key">"id_activity_percentage"</span>: <span class="tok-num">3050020</span>
+}</code></pre>
+      <p class="src" data-i18n="live_src">Capturado parcheando <code>window.fetch</code> mientras se navegaba la app real — estado 200, API de producción (<code>sauco.abblo.com.co</code>). Las URLs de imagen son links pre-firmados de DigitalOcean Spaces, válidos 48 horas desde que se emiten.</p>
+      <p data-i18n="live_p2">Nota los cuatro marcadores <code>%s</code> por elemento de contenido (<code>"casual wear: %s %s %s %s"</code>) — el estudiante arrastra 4 de las palabras de <code>content_option[0].text</code> (separadas por <code>%s</code>) hacia esos espacios. Cada una de las 4 preguntas vale <code>qualify_weigth: "25.00"</code>, sumando 100 — coincidiendo con la regla de validación del backend de "los pesos deben sumar 100%" mencionada en <a href="#activities-overview">Cómo funciona una actividad</a>.</p>
+    </section>
+
+    <section id="tests">
+      <h2 data-i18n="s_tests_h2">El módulo de Tests</h2>
+      <p data-i18n="tests_p1">Un <strong>Test</strong> es simplemente la <em>última lección de una unidad</em>, presentada de forma distinta: como una secuencia de actividades dentro de un wizard a pantalla completa, en vez de una actividad por página.</p>
+
+      <div class="grid2">
+        <div class="card">
+          <h4 data-i18n="tests_card1_h">Límite de alcance importante</h4>
+          <p style="margin:0" data-i18n="tests_card1_p">Sin importar el <code>activity_type.code</code> real de la actividad subyacente, la UI de Tests <strong>solo renderiza un widget de opción múltiple</strong>. El rico catálogo de 24 tipos de arriba es un concepto exclusivo de Lección — los Tests aplanan todo a MCQ.</p>
+        </div>
+        <div class="card">
+          <h4 data-i18n="tests_card2_h">El endpoint de envío es distinto</h4>
+          <p style="margin:0" data-i18n="tests_card2_p"><code class="mono">POST activity/{id}/answers</code> — sin el segmento <code>/group/{idGroup}/</code>, a diferencia del endpoint de envío de Lección. Fácil de pasar por alto al portar.</p>
+        </div>
+      </div>
+
+      <h4 data-i18n="tests_retry_h">Semántica de reintentos</h4>
+      <ul>
+        <li data-i18n="tests_retry_li1"><strong>Por actividad, a mitad del test:</strong> sin reintento — una vez respondida, se avanza a la siguiente actividad de la secuencia.</li>
+        <li data-i18n="tests_retry_li2"><strong>Todo el test:</strong> "Repetir Test" reinicia todo el wizard, limitado por el mismo <code>MAX_ATTEMPTS</code> (5 prod / 100 dev) contra el propio contador de intentos del test.</li>
+      </ul>
+      <h4 data-i18n="tests_complete_h">Modal de nivel completado</h4>
+      <p data-i18n="tests_complete_p">Al terminar un test se revisa si hay una lección o unidad siguiente en el árbol de contenido. Si de verdad no queda nada, se dispara un modal de felicitación: <em>"Congratulations, level completed!"</em> — este es el <strong>único</strong> lugar en toda la app con una celebración explícita de "ya terminaste". La navegación normal de Lección/Unidad no tiene equivalente — ahí la completitud siempre es implícita (todas las actividades tienen <code>has_attemp</code> en <code>true</code>), sin ninguna pantalla o evento dedicado de "lección completada".</p>
+    </section>
+
+    <section id="teacher">
+      <h2 data-i18n="s_teacher_h2">Clases, calificación y reportes (lado docente)</h2>
+      <div class="tablewrap"><table>
+        <tr><th data-i18n="th_purpose">Propósito</th><th data-i18n="th_endpoint3">Endpoint</th></tr>
+        <tr><td data-i18n="t_tr1">Clases del docente</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>user/enrolments</td></tr>
+        <tr><td data-i18n="t_tr2">Listado de alumnos + progreso</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>group/{idGroup}/users/progress</td></tr>
+        <tr><td data-i18n="t_tr3">Cola de calificación pendiente</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>group/{idGroup}/activities/pending</td></tr>
+        <tr><td data-i18n="t_tr4">Intento completo para calificar manualmente</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>activitypercentage/{id}/full</td></tr>
+        <tr><td data-i18n="t_tr5">Enviar una calificación manual + feedback</td><td class="mono"><span class="meth post" style="margin-right:6px">POST</span>activitypercentage/{id}/answers</td></tr>
+        <tr><td data-i18n="t_tr6">Abrir/cerrar una ventana de test de práctica</td><td class="mono"><span class="meth patch" style="margin-right:6px">PATCH</span>group/{idGroup}/lesson/{id}/activities</td></tr>
+        <tr><td data-i18n="t_tr7">Cambiar la clave de ingreso de una clase</td><td class="mono"><span class="meth patch" style="margin-right:6px">PATCH</span>group/{idGroup}/password</td></tr>
+        <tr><td data-i18n="t_tr8">Promedios por corte (periodo de calificación)</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>group/{idGroup}/grading_period/{corteId}/averages</td></tr>
+        <tr><td data-i18n="t_tr9">Descargar reporte Excel del grupo</td><td class="mono"><span class="meth get" style="margin-right:6px">GET</span>dashboard/group/{idGroup}/download_report <span class="mono" style="color:var(--text-dim)" data-i18n="t_binary">(binario)</span></td></tr>
+      </table></div>
+      <p data-i18n="teacher_p1">Cuerpo de calificación manual: <code class="mono">{ contents: [{ id, percentage }], feedback }</code> — porcentaje por contenido, limitado para que la suma nunca pase de 100.</p>
+      <div class="warn" data-i18n="teacher_warn1">El control de acceso por rol (estudiante vs. docente) es casi enteramente <strong>del lado del cliente</strong> — chequeos de <code>userData.rol_code === "02"</code> esparcidos por los componentes, no algo visible como un contrato dedicado del backend desde este código. Confirma directamente con el backend si estos endpoints aplican controles de rol/propiedad de forma independiente del lado del servidor antes de asumir que el mismo control solo-del-cliente es seguro en el móvil.</div>
+    </section>
+
+    <section id="caveats">
+      <h2 data-i18n="s_caveats_h2">Problemas a tener en cuenta antes de portar</h2>
+      <ol>
+        <li data-i18n="cav_li1"><strong>Sin flujo de refresh-token.</strong> Un solo 401 en cualquier parte borra toda la sesión. Decidan si el móvil quiere el mismo comportamiento o algo más suave.</li>
+        <li data-i18n="cav_li2"><strong>Login y <code>/user/me</code> tienen formas distintas.</strong> El login es plano; <code>/user/me</code> anida los campos de perfil bajo <code>profile</code>. No asuman un solo esquema para "el objeto usuario".</li>
+        <li data-i18n="cav_li3"><strong>Bug de coerción de tipos en las comparaciones de calificación</strong> (<code>percentage</code> como número vs. <code>qualify_weigth</code> como string) — corregido en la mayoría de lugares con <code>Number()</code>, no en todos.</li>
+        <li data-i18n="cav_li4"><strong>UI de 6 niveles hardcodeada</strong> en la web, a pesar de que el curso real tiene más niveles (10 vistos en vivo). No copien este límite.</li>
+        <li data-i18n="cav_li5"><strong>Dos campos de Redux muertos</strong> — <code>idsActivities</code> y <code>dataCompleteActivities</code> están declarados pero nunca se llenan en ninguna parte del código. No asuman que llevan datos reales si consultan el código fuente web.</li>
+        <li data-i18n="cav_li6"><strong>Los Tests solo renderizan Opción Múltiple</strong> sin importar el tipo real de actividad por debajo — una simplificación deliberada (o quizás incompleta) que vale la pena decidir como producto para el móvil.</li>
+        <li data-i18n="cav_li7"><strong>Sin evento explícito de "lección/unidad completada"</strong> fuera del modal de nivel completado del módulo de Tests — en lo demás, la completitud es solo un estado inferido.</li>
+        <li data-i18n="cav_li8"><strong><code>average_attempts</code></strong> solo existe pre-calculado en el endpoint de reporte <code>me_skills</code> — no hay ninguna fórmula que replicar del lado del cliente.</li>
+        <li data-i18n="cav_li9"><strong>Algunos endpoints reusan un mismo nombre de recurso para cosas muy distintas</strong> — ej. <code>group</code> es la ruta base para unidades/actividades, calificaciones, posición, contraseña, actividades pendientes, y el reporte Excel. <code>endpoints.ts</code> por sí solo no distingue esto; el sufijo que discrimina está hardcodeado en cada punto de llamada.</li>
+      </ol>
+    </section>
+
+    <section id="endpoint-index">
+      <h2 data-i18n="s_index_h2">Índice completo de endpoints</h2>
+      <div class="tablewrap"><table>
+        <tr><th data-i18n="th_domain">Dominio</th><th data-i18n="th_methpath">Método y ruta</th><th data-i18n="th_purpose2">Propósito</th></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">POST auth</td><td data-i18n="idx_1">Login</td></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">GET user/enrolments</td><td data-i18n="idx_2">Listar matrículas</td></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">POST user</td><td data-i18n="idx_3">Registro</td></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">GET user/me</td><td data-i18n="idx_4">Usuario actual (perfil anidado)</td></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">POST user/sendPasswordResetLink</td><td data-i18n="idx_5">Pedir link de reseteo</td></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">POST user/resetPassword</td><td data-i18n="idx_6">Resetear con token</td></tr>
+        <tr><td data-i18n="idx_auth">Auth</td><td class="mono">POST user/updatePassword</td><td data-i18n="idx_7">Cambiar contraseña (con sesión)</td></tr>
+        <tr><td data-i18n="idx_profile">Perfil</td><td class="mono">PUT user</td><td data-i18n="idx_8">Actualizar el propio perfil</td></tr>
+        <tr><td data-i18n="idx_profile">Perfil</td><td class="mono">POST user/image</td><td data-i18n="idx_9">Subir foto de perfil</td></tr>
+        <tr><td data-i18n="idx_profile">Perfil</td><td class="mono">DELETE user/image</td><td data-i18n="idx_10">Borrar foto de perfil</td></tr>
+        <tr><td data-i18n="idx_navdom">Navegación</td><td class="mono">GET course/all</td><td data-i18n="idx_11">Listar cursos</td></tr>
+        <tr><td data-i18n="idx_navdom">Navegación</td><td class="mono">GET course/{idCourse}/levels</td><td data-i18n="idx_12">Niveles de un curso</td></tr>
+        <tr><td data-i18n="idx_navdom">Navegación</td><td class="mono">GET levelcourse/{idLevel}/groups</td><td data-i18n="idx_13">Grupos/clases de un nivel</td></tr>
+        <tr><td data-i18n="idx_navdom">Navegación</td><td class="mono">POST coursetoken/enroll</td><td data-i18n="idx_14">Matricularse en una clase con una clave</td></tr>
+        <tr><td data-i18n="idx_navdom">Navegación</td><td class="mono">GET group/{idGroup}/units/activities</td><td data-i18n="idx_15">Árbol de contenido completo</td></tr>
+        <tr><td data-i18n="idx_navdom">Navegación</td><td class="mono">GET group/{idGroup}/me/position</td><td data-i18n="idx_16">Posición para retomar</td></tr>
+        <tr><td data-i18n="idx_progdom">Progreso</td><td class="mono">GET course/{idCourse}/progress/me</td><td data-i18n="idx_17">% de completitud por nivel</td></tr>
+        <tr><td data-i18n="idx_progdom">Progreso</td><td class="mono">GET group/{idGroup}/user/{idUser}/grades</td><td data-i18n="idx_18">Hoja de calificación por actividad</td></tr>
+        <tr><td data-i18n="idx_progdom">Progreso</td><td class="mono">GET group/{idGroup}/me_skills</td><td data-i18n="idx_19">Reporte por habilidad</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">GET activity/{id}/group/{idGroup}/attempt</td><td data-i18n="idx_20">Iniciar/continuar un intento</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">GET activity/{id}/group/{idGroup}/review</td><td data-i18n="idx_21">Revisar mi intento</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">GET activity/{id}/group/{idGroup}/user/{idStudent}/review</td><td data-i18n="idx_22">Revisión del docente</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">POST activity/{id}/group/{idGroup}/answers</td><td data-i18n="idx_23">Enviar respuestas (lección)</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">GET activitypercentage/{id}</td><td data-i18n="idx_24">Desglose calificado</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">GET activitypercentage/{id}/full</td><td data-i18n="idx_25">Intento completo para calificar</td></tr>
+        <tr><td data-i18n="idx_actdom">Actividades</td><td class="mono">POST activitypercentage/{id}/answers</td><td data-i18n="idx_26">Calificación manual del docente</td></tr>
+        <tr><td data-i18n="idx_testsdom">Tests</td><td class="mono">GET group/{idGroup}/units/activities/test</td><td data-i18n="idx_27">Árbol de contenido marcado como test</td></tr>
+        <tr><td data-i18n="idx_testsdom">Tests</td><td class="mono">PATCH group/{idGroup}/lesson/{id}/activities</td><td data-i18n="idx_28">Abrir/cerrar ventana de test</td></tr>
+        <tr><td data-i18n="idx_testsdom">Tests</td><td class="mono">POST activity/{id}/answers</td><td data-i18n="idx_29">Enviar respuestas (test — sin segmento de grupo)</td></tr>
+        <tr><td data-i18n="idx_testsdom">Tests</td><td class="mono">GET activity/{id}/review</td><td data-i18n="idx_30">Revisar un paso del test</td></tr>
+        <tr><td data-i18n="idx_teachdom">Docente</td><td class="mono">GET group/{idGroup}/users/progress</td><td data-i18n="idx_31">Listado de alumnos + progreso</td></tr>
+        <tr><td data-i18n="idx_teachdom">Docente</td><td class="mono">GET group/{idGroup}/activities/pending</td><td data-i18n="idx_32">Cola de calificación pendiente</td></tr>
+        <tr><td data-i18n="idx_teachdom">Docente</td><td class="mono">PATCH group/{idGroup}/password</td><td data-i18n="idx_33">Cambiar clave de ingreso de la clase</td></tr>
+        <tr><td data-i18n="idx_teachdom">Docente</td><td class="mono">GET group/{idGroup}/grading_period/{id}/averages</td><td data-i18n="idx_34">Promedios del periodo de calificación</td></tr>
+        <tr><td data-i18n="idx_teachdom">Docente</td><td class="mono">GET dashboard/group/{idGroup}/download_report</td><td data-i18n="idx_35">Reporte Excel (binario)</td></tr>
+      </table></div>
+    </section>
+
+    <footer class="end" data-i18n="footer_text">Compilado a partir del código fuente de <code>abblo-frontend-jesus-trocha</code> y una petición capturada en vivo contra la API de producción. Los endpoints no alcanzables desde los flujos de la app de estudiante/docente (rutas puras de panel admin) están intencionalmente fuera de alcance.</footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var I18N = {
+    menu: { es: "☰ Índice", en: "☰ Menu" },
+    brand_sub: { es: "Referencia de API y Actividades", en: "API &amp; Activities Reference" },
+    grp_start: { es: "Empieza aquí", en: "Start here" },
+    nav_overview: { es: "Resumen", en: "Overview" },
+    nav_conventions: { es: "Convenciones de las peticiones", en: "Request conventions" },
+    nav_data_model: { es: "Modelo de datos central", en: "Core data model" },
+    grp_auth: { es: "Auth y perfil", en: "Auth &amp; profile" },
+    nav_auth: { es: "Autenticación", en: "Authentication" },
+    nav_profile: { es: "Perfil y foto", en: "Profile &amp; photo" },
+    grp_content: { es: "Contenido y progreso", en: "Content &amp; progress" },
+    nav_navigation: { es: "Course → Level → Unit → Lesson", en: "Course → Level → Unit → Lesson" },
+    nav_progress: { es: "Seguimiento de progreso", en: "Progress tracking" },
+    grp_activities: { es: "Actividades (núcleo)", en: "Activities (core)" },
+    nav_activities_overview: { es: "Cómo funciona una actividad", en: "How an activity works" },
+    nav_activity_types: { es: "Los 24 tipos de actividad", en: "The 24 activity types" },
+    nav_process_field: { es: "El campo \"process\"", en: "The \"process\" field" },
+    nav_submitting: { es: "Enviar respuestas", en: "Submitting answers" },
+    nav_attempts: { es: "Modelo de intentos", en: "Attempts model" },
+    nav_live_example: { es: "Ejemplo real capturado", en: "Real captured example" },
+    grp_tests: { es: "Tests", en: "Tests" },
+    nav_tests: { es: "El módulo de Tests", en: "The Tests module" },
+    grp_teacher: { es: "Lado docente", en: "Teacher side" },
+    nav_teacher: { es: "Clases, calificación y reportes", en: "Classes, grading &amp; reports" },
+    grp_wrap: { es: "Cierre", en: "Wrap-up" },
+    nav_caveats: { es: "Problemas a tener en cuenta", en: "Known issues to flag" },
+    nav_endpoint_index: { es: "Índice completo de endpoints", en: "Full endpoint index" },
+
+    h1_title: { es: "Abblo API &amp; Activities Reference", en: "Abblo API &amp; Activities Reference" },
+    hero_p1: { es: "Cómo el frontend web de Abblo habla con el backend — cada endpoint que llama, la forma exacta de cada petición y respuesta, y en particular cómo funciona el motor de <strong>Actividades</strong>: el esquema de contenido, el flujo de envío de respuestas, y cómo se registran los intentos. Escrito para el equipo que está construyendo Abblo Mobile.",
+                en: "How the Abblo web frontend talks to the backend — every endpoint it calls, the shape of every request and response, and in particular how the <strong>Activities</strong> engine works: content schema, the answer-submission flow, and how attempts are tracked. Written for the team building Abblo Mobile." },
+    hero_p2: { es: "Hecho leyendo el código fuente del frontend en producción (<code>abblo-frontend-jesus-trocha</code>) y capturando en vivo una petición/respuesta real de una lección real. Donde el código del frontend no revela algo, se aclara explícitamente en vez de adivinar.",
+                en: "Built by reading the production frontend source (<code>abblo-frontend-jesus-trocha</code>) and capturing a live request/response from a real lesson. Where the frontend code doesn't reveal something, that's called out explicitly rather than guessed." },
+    pill1: { es: "React + Redux Toolkit + Vite", en: "React + Redux Toolkit + Vite" },
+    pill2: { es: "REST / JSON sobre HTTPS", en: "REST / JSON over HTTPS" },
+    pill3: { es: "Autenticación con Bearer token", en: "Bearer token auth" },
+
+    s_conventions_h2: { es: "Convenciones de las peticiones", en: "Request conventions" },
+    s_conventions_p1: { es: "Toda petición pasa por un único wrapper, <code>customFetch</code> (<code>src/services/fetch.ts</code>). Algunas reglas aplican a <em>todos</em> los endpoints de abajo salvo que se indique lo contrario:",
+                        en: "Every request goes through one wrapper, <code>customFetch</code> (<code>src/services/fetch.ts</code>). A few rules apply to <em>all</em> of the endpoints below unless stated otherwise:" },
+    conv_base_h: { es: "Base URL", en: "Base URL" },
+    conv_base_p: { es: "Se elige con una bandera definida en tiempo de compilación: <code>VITE_DEV === \"on\"</code> → API de dev (<code>pabbloapi.americana.edu.co/api/</code>), si no, producción (<code>sauco.abblo.com.co/api/</code>). Cada ruta de abajo es relativa a esa base — ej. <code>user/me</code> en realidad significa <code>https://sauco.abblo.com.co/api/user/me</code>.",
+                 en: "Picked by a build-time flag: <code>VITE_DEV === \"on\"</code> → dev API (<code>pabbloapi.americana.edu.co/api/</code>), otherwise production (<code>sauco.abblo.com.co/api/</code>). Every path below is relative to that base — e.g. <code>user/me</code> really means <code>https://sauco.abblo.com.co/api/user/me</code>." },
+    conv_auth_h: { es: "Header de auth", en: "Auth header" },
+    conv_auth_p: { es: "Casi todas las llamadas envían <code>Authorization: Bearer &lt;access_token&gt;</code> más <code>Content-Type: application/json</code>. Las pocas que suben un archivo (login, subida de foto) envían <code>multipart/form-data</code> en su lugar, sin header de Content-Type explícito.",
+                  en: "Almost every call sends <code>Authorization: Bearer &lt;access_token&gt;</code> plus <code>Content-Type: application/json</code>. The few that upload a file (login, photo upload) send <code>multipart/form-data</code> instead, with no explicit Content-Type header." },
+    conv_401_h: { es: "Comportamiento en 401", en: "401 behavior" },
+    conv_401_p: { es: "Un 401 en <em>cualquier</em> petición borra inmediatamente toda la sesión y fuerza un nuevo login. No hay ningún flujo de refresh-token en este frontend — si la app móvil quiere re-autenticación silenciosa, eso necesitaría soporte del backend que no parece usarse aquí.",
+                 en: "A 401 on <em>any</em> request immediately wipes the entire session and forces re-login. There is no refresh-token flow in this frontend — if the mobile app wants silent re-auth, that needs backend support that doesn't appear to be used here." },
+    conv_page_h: { es: "Paginación", en: "Pagination" },
+    conv_page_p: { es: "No hay un constructor de queries consistente — la mayoría de los endpoints de listado se llaman con strings armados a mano como <code>?page=1&amp;per_page=100&amp;order_by=name-asc</code>. Trata <code>page</code>, <code>per_page</code>, <code>order_by=field-asc|desc</code> y varias claves <code>filter_by_*</code> como la convención de facto.",
+                  en: "No consistent query-builder — most list endpoints are called with hand-built strings like <code>?page=1&amp;per_page=100&amp;order_by=name-asc</code>. Treat <code>page</code>, <code>per_page</code>, <code>order_by=field-asc|desc</code> and various <code>filter_by_*</code> keys as the de facto convention." },
+    conv_file_note: { es: "<strong>Descarga de archivos.</strong> Solo un endpoint devuelve un archivo binario (el reporte Excel grupal del docente) — usa una ruta aparte, <code>customFetchFile</code>, que lee un <code>Blob</code> en vez de JSON. Todo lo demás en este documento es JSON.",
+                      en: "<strong>File downloads.</strong> Only one endpoint returns a binary file (the teacher's Excel group report) — it uses a separate <code>customFetchFile</code> path that reads a <code>Blob</code> instead of JSON. Everything else in this document is JSON." },
+
+    s_data_model_h2: { es: "Modelo de datos central: Course, Level, Group, Enrolment", en: "Core data model: Course, Level, Group, Enrolment" },
+    dm_p1: { es: "Estos cuatro conceptos aparecen en casi todos los endpoints, y el equipo móvil necesita tener clara la diferencia antes de que cualquier otra cosa tenga sentido.",
+             en: "These four concepts show up in nearly every endpoint, and the mobile team needs the distinction clear before anything else makes sense." },
+    dm_level_h: { es: "Nivel", en: "Level" },
+    dm_level_p: { es: "Un sub-nivel del currículo CEFR — el contenido en sí. Compartido por todos los estudiantes que lo cursan. Los nombres reales se ven así: <strong>\"Elementary A1.1\"</strong> o <strong>\"Intermediate B1.1\"</strong>. Tiene <code>id</code>, <code>name</code>, <code>ordering</code> (su posición, base 1, en todo el currículo).",
+                en: "A CEFR curriculum sub-level — the actual content. Shared by every student taking it. Real names look like <strong>\"Elementary A1.1\"</strong> or <strong>\"Intermediate B1.1\"</strong>. Has <code>id</code>, <code>name</code>, <code>ordering</code> (its 1-based position in the whole curriculum)." },
+    dm_group_h: { es: "Grupo", en: "Group" },
+    dm_group_p: { es: "Una clase/cohorte específica cursando ese nivel: un docente, un <code>code</code>, un <code>period</code> (periodo académico), fechas de inicio/fin, y una <code>group_password</code> para auto-matricularse. Lleva crucialmente <code>is_active</code> — si este es el grupo que el estudiante debería estar usando ahora mismo.",
+                en: "One specific class/cohort running that level: a teacher, a <code>code</code>, a <code>period</code> (academic term), start/finish dates, and a self-enrollment <code>group_password</code>. Crucially carries <code>is_active</code> — whether this is the one the student should be using right now." },
+    dm_enrol_p: { es: "<strong>Matrícula (Enrolment)</strong> = un emparejamiento (Nivel, Grupo) para un estudiante. Un estudiante puede tener varias filas de matrícula para el <em>mismo</em> nivel a lo largo del tiempo (repitiéndolo, cambiando de cohorte) — solo una debería tener <code>group.is_active: true</code> por nivel a la vez.",
+                en: "<strong>Enrolment</strong> = one (Level, Group) pairing for one student. A student can have several enrolment rows for the <em>same</em> level across time (retaking it, moving cohorts) — only one should have <code>group.is_active: true</code> per level at a time." },
+    dm_warn: { es: "<strong>Por qué importa:</strong> casi todos los endpoints de contenido están indexados por <strong>id de grupo</strong>, no de nivel — <code>group/{idGroup}/units/activities</code>, <code>group/{idGroup}/user/{idUser}/grades</code>, <code>activity/{id}/group/{idGroup}/attempt</code>. El móvil siempre debe resolver \"mi grupo activo para este nivel\" a partir de <code>enrolments</code> antes de poder pedir cualquier contenido — el id de nivel solo no alcanza.",
+              en: "<strong>Why this matters:</strong> almost every content endpoint is keyed by <strong>group id</strong>, not level id — <code>group/{idGroup}/units/activities</code>, <code>group/{idGroup}/user/{idUser}/grades</code>, <code>activity/{id}/group/{idGroup}/attempt</code>. Mobile must always resolve \"my active group for this level\" from <code>enrolments</code> before it can fetch any content — a level id alone isn't enough." },
+    dm_example_h: { es: "Ejemplo: respuesta de <code class=\"mono\">GET user/enrolments</code>", en: "Example: <code class=\"mono\">GET user/enrolments</code> response" },
+    dm_src: { es: "Campos confirmados en <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> y en el uso real en toda la app.",
+              en: "Fields confirmed from <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> and real usage across the app." },
+
+    s_auth_h2: { es: "Autenticación", en: "Authentication" },
+    auth_p1: { es: "Login. <code>multipart/form-data</code> con <code>identification_number</code> + <code>password</code>. <strong>La respuesta es plana</strong> — el token y el perfil completo vienen juntos al nivel superior, no anidados:",
+               en: "Login. <code>multipart/form-data</code> with <code>identification_number</code> + <code>password</code>. <strong>The response is flat</strong> — token and full profile fields together at the top level, not nested:" },
+    auth_p2: { es: "<code class=\"mono\">rol_code</code>: <strong>\"01\"</strong> = estudiante, <strong>\"02\"</strong> = docente. Este único campo maneja casi todas las decisiones de UI según rol en la app.",
+               en: "<code class=\"mono\">rol_code</code>: <strong>\"01\"</strong> = student, <strong>\"02\"</strong> = teacher. This single field drives almost every role-gated UI decision in the app." },
+    auth_p3: { es: "Se pide justo después del login (y de nuevo al unirse a una clase nueva). Devuelve el arreglo de matrículas mostrado arriba.",
+               en: "Fetched right after login (and again after joining a new class). Returns the enrolment array shown above." },
+    auth_p4: { es: "Perfil del usuario actual — <strong>anidado</strong> bajo <code>profile</code>, a diferencia de la respuesta del login:",
+               en: "Current user profile — <strong>nested</strong> under <code>profile</code>, unlike the login response:" },
+    auth_note1: { es: "Se llama específicamente para refrescar la URL de la foto después de una subida/borrado, porque la respuesta del endpoint de subida no incluye la URL firmada nueva. El móvil debería esperar hacer el mismo ida-y-vuelta.",
+                  en: "Called specifically to refresh the photo URL after an upload/delete, because the upload endpoint's own response doesn't include the newly-signed image URL. Mobile should expect to do the same round-trip." },
+    auth_p5: { es: "Registro. Cuerpo: <code>{ first_name, last_name, email, password, id_rol, user_terms, promotions, id_identification_type, identification_number, cellphone, birth_date, id_country, is_active }</code>.",
+               en: "Register. Body: <code>{ first_name, last_name, email, password, id_rol, user_terms, promotions, id_identification_type, identification_number, cellphone, birth_date, id_country, is_active }</code>." },
+    auth_pwd_h: { es: "Flujos de contraseña", en: "Password flows" },
+    th_endpoint: { es: "Endpoint", en: "Endpoint" },
+    th_body: { es: "Cuerpo", en: "Body" },
+    th_auth: { es: "Auth", en: "Auth" },
+    auth_tr_public: { es: "público", en: "public" },
+    auth_tr_public2: { es: "público (token en el cuerpo)", en: "public (token in body)" },
+    auth_tr_logged: { es: "usuario con sesión iniciada", en: "logged-in user" },
+    auth_warn1: { es: "Las cuentas externas/SSO (<code>userData.is_external_user === true</code>) nunca tienen la opción de \"cambiar contraseña\" en la UI — confirma con el backend si ese endpoint siquiera funciona para ellas antes de portar este flujo.",
+                  en: "External/SSO accounts (<code>userData.is_external_user === true</code>) never get a \"change password\" option in the UI at all — confirm with backend whether that endpoint even works for them before porting this flow." },
+
+    s_profile_h2: { es: "Perfil y foto", en: "Profile &amp; photo" },
+    profile_p1: { es: "Actualizar el propio perfil. Cuerpo: <code>{ id_user, first_name, last_name, email, cellphone, id_identification_type, identification_number, id_country, birth_date, username, id_rol, is_active, about_me }</code>. Sin id en la URL — el backend infiere el usuario a partir del token.",
+                  en: "Update own profile. Body: <code>{ id_user, first_name, last_name, email, cellphone, id_identification_type, identification_number, id_country, birth_date, username, id_rol, is_active, about_me }</code>. No id in the URL — the backend infers the user from the token." },
+    profile_p2: { es: "<code>multipart/form-data</code>, campo <code>image_file</code>. Validación del lado del cliente antes de subir: <strong>solo png/jpg/jpeg, máximo 2&nbsp;MB</strong>. La respuesta no trae la URL firmada nueva — siempre hay que seguirla con <code>GET user/me</code>.",
+                  en: "<code>multipart/form-data</code>, field <code>image_file</code>. Client-side validation before upload: <strong>png/jpg/jpeg only, max 2&nbsp;MB</strong>. Response doesn't carry the new signed URL — always follow with <code>GET user/me</code>." },
+    profile_p3: { es: "Sin cuerpo. Limpia <code>img_big</code>/<code>img_small</code> del lado del cliente si tiene éxito.",
+                  en: "No body. Clears <code>img_big</code>/<code>img_small</code> client-side on success." },
+    profile_warn1: { es: "<strong>Nota de CORS sobre el bucket de DigitalOcean Spaces:</strong> las fotos de perfil se sirven desde <code>resources-abblo.nyc3.digitaloceanspaces.com</code> como URLs pre-firmadas. Cargan bien como <code>&lt;img&gt;</code>/en cualquier navegador, pero leer sus bytes desde JavaScript (canvas, <code>fetch</code>, cualquier cosa que necesite re-procesar la imagen — ej. generar un PDF del lado del cliente) está bloqueado a menos que la configuración de CORS del bucket permita explícitamente el origen que hace la llamada. Las apps móviles nativas haciendo peticiones HTTP directas a la URL firmada <em>no</em> están sujetas a CORS (es una restricción exclusiva del navegador), así que este problema en particular no debería afectar a Abblo Mobile — pero vale la pena saber que la lista de CORS del bucket por ahora solo incluye los dominios de la app web.",
+                   en: "<strong>CORS note for the DigitalOcean Spaces bucket:</strong> profile photos are served from <code>resources-abblo.nyc3.digitaloceanspaces.com</code> as pre-signed URLs. They load fine as <code>&lt;img&gt;</code>/in any browser, but reading their bytes from JavaScript (canvas, <code>fetch</code>, anything that needs to re-process the image — e.g. generating a PDF client-side) is blocked unless the bucket's CORS configuration explicitly allows the calling origin. Native mobile apps making direct HTTP requests to the signed URL are <em>not</em> subject to CORS (it's a browser-only restriction), so this specific issue shouldn't affect Abblo Mobile — but it's worth knowing the bucket's CORS list only currently includes the web app's own domains." },
+
+    s_nav_h2: { es: "Course → Level → Unit → Lesson → Activity", en: "Course → Level → Unit → Lesson → Activity" },
+    nav_p1: { es: "La jerarquía de contenido, de afuera hacia adentro:", en: "The content hierarchy, outside-in:" },
+    flow1_h: { es: "Course (curso)", en: "Course" },
+    flow1_p: { es: "<span class=\"mono\">GET course/all</span> — la materia de nivel superior (ej. \"English\"). Se elige una sola vez en la pantalla de bienvenida.",
+               en: "<span class=\"mono\">GET course/all</span> — top-level subject (e.g. \"English\"). Picked once on the welcome screen." },
+    flow2_h: { es: "Level (nivel)", en: "Level" },
+    flow2_p: { es: "<span class=\"mono\">GET course/{idCourse}/levels</span> — los sub-niveles CEFR de ese curso, cada uno con <code>id, name, ordering, img_big</code>.",
+               en: "<span class=\"mono\">GET course/{idCourse}/levels</span> — the CEFR sub-levels in that course, each with <code>id, name, ordering, img_big</code>." },
+    flow3_h: { es: "Units → Lessons → Activities", en: "Units → Lessons → Activities" },
+    flow3_p: { es: "<span class=\"mono\">GET group/{idGroup}/units/activities</span> — <strong>todo el árbol de contenido</strong> de un nivel se trae en una sola llamada, con el alcance acotado al grupo activo del estudiante. Esta única respuesta se cachea del lado del cliente y se usa para toda la navegación dentro del nivel (actividad siguiente/anterior, estado de desbloqueo, progreso).",
+               en: "<span class=\"mono\">GET group/{idGroup}/units/activities</span> — the <strong>entire content tree</strong> for a level is fetched in one call, scoped to the student's active group. This single response is cached client-side and used for all in-level navigation (next/previous activity, unlock state, progress)." },
+    flow4_h: { es: "Una actividad a la vez", en: "One activity at a time" },
+    flow4_p: { es: "Una pantalla de Lección muestra exactamente una actividad. Avanzar solo se permite una vez que la actividad <em>actual</em> tiene <code>has_attemp: true</code> — no se puede saltar sin responder. Retroceder no tiene esa restricción.",
+               en: "A Lesson screen shows exactly one activity. Moving forward is only allowed once the <em>current</em> activity has <code>has_attemp: true</code> — you can't skip ahead unanswered. Moving back has no such gate." },
+    nav_tree_h: { es: "Forma del árbol unit/lesson/activity", en: "Unit/lesson/activity tree shape" },
+    nav_tree_p: { es: "<code class=\"mono\">can_access</code> controla si una lección/unidad se muestra bloqueada en la UI; <code class=\"mono\">has_attemp</code> es el flag de completitud por actividad usado en todas partes para saber \"si ya está hecha\".",
+                  en: "<code class=\"mono\">can_access</code> gates whether a lesson/unit shows locked in the UI; <code class=\"mono\">has_attemp</code> is the per-activity completion flag used everywhere for \"is this done yet.\"" },
+    nav_pos_p: { es: "El puntero \"retomar donde quedé\" del estudiante — devuelve los objetos <code>unit</code>/<code>lesson</code>/<code>activity</code> visitados por última vez, usado para alimentar la tarjeta \"Continuar\" del dashboard.",
+                 en: "The student's \"resume where I left off\" pointer — returns the last-visited <code>unit</code>/<code>lesson</code>/<code>activity</code> objects, used to render the dashboard's \"Continue\" card." },
+
+    s_progress_h2: { es: "Seguimiento de progreso", en: "Progress tracking" },
+    progress_p1: { es: "Porcentaje de completitud por nivel — alimenta la UI de \"medallas\"/insignias de nivel en Home, Perfil y el Reporte Individual.",
+                   en: "Per-level completion percentage — powers the \"medal\"/level-badge UI across Home, Profile and the Individual Report." },
+    progress_warn1: { es: "<strong>Supuesto hardcodeado de 6 niveles:</strong> la UI de \"medallas\" de la app web es un arreglo estático de exactamente 6 espacios, emparejado por posición con esta respuesta según <code>ordering</code>. La app en vivo de hecho mostró <strong>10 niveles</strong> en su selector de nivel durante las pruebas — el móvil debería armar su lista de niveles a partir del largo real de esta respuesta, no copiar el layout fijo de 6 espacios de la web.",
+                    en: "<strong>Hardcoded 6-level assumption:</strong> the web app's \"medal\" UI is a static array of exactly 6 slots, positionally matched to this response by <code>ordering</code>. The live app actually showed <strong>10 levels</strong> in its level switcher during testing — mobile should drive its level list from this response's actual length, not copy the web app's fixed 6-slot layout." },
+    progress_p2: { es: "Hoja de calificaciones completa por actividad para el grupo activo (opcionalmente <code>?filter_by_id_unit={id}</code>). Cada fila expone <code>activity.has_attemp</code> — sumado contra el total de actividades de la unidad para calcular la barra de progreso dentro de la unidad que se muestra en el dashboard.",
+                   en: "Full per-activity grade sheet for the active group (optionally <code>?filter_by_id_unit={id}</code>). Each row exposes <code>activity.has_attemp</code> — summed against the unit's total activity count to compute the in-unit progress bar shown on the dashboard." },
+    progress_p3: { es: "Desglose por habilidad para el Reporte Individual (Speaking/Grammar/Writing/Reading/Listening/Vocabulary):",
+                   en: "Per-skill breakdown for the Individual Report (Speaking/Grammar/Writing/Reading/Listening/Vocabulary):" },
+    progress_note1: { es: "<strong>Este es el único lugar donde aparece <code>average_attempts</code>.</strong> Es un agregado pre-calculado del lado del servidor, específico de este endpoint de reporte — no hay lógica de promedio del lado del cliente que portar, y ningún otro endpoint lo expone. Si el móvil lo necesita en otro lado, tiene que venir del backend, no derivarse localmente de <code>actual_attempts</code>.",
+                      en: "<strong>This is the only place <code>average_attempts</code> appears anywhere.</strong> It's a pre-computed server-side aggregate specific to this report endpoint — there is no client-side averaging logic to port, and no other endpoint exposes it. If mobile needs it elsewhere, it has to come from the backend, not be derived from <code>actual_attempts</code> locally." },
+
+    s_act_overview_h2: { es: "Cómo funciona una actividad", en: "How an activity works" },
+    act_overview_p1: { es: "Este es el corazón del producto. Un mismo esquema de respuesta del backend es compartido por todas las actividades, y el frontend se ramifica fuertemente según <code class=\"mono\">activity_type.code</code> para decidir cómo renderizarla y cómo armar la respuesta que envía.",
+                       en: "This is the heart of the product. One backend response schema is shared by every activity, and the frontend branches heavily on <code class=\"mono\">activity_type.code</code> to decide how to render it and how to build the answer it submits." },
+    act_fetch_h3: { es: "Pidiendo una actividad", en: "Fetching an activity" },
+    th_when: { es: "Cuándo", en: "When" }, th_endpoint2: { es: "Endpoint", en: "Endpoint" },
+    act_tr1: { es: "Iniciar / continuar un intento", en: "Start / continue an attempt" },
+    act_tr2: { es: "Revisar mi propio intento ya enviado", en: "Review my own submitted attempt" },
+    act_tr3: { es: "El docente revisa a un estudiante específico", en: "Teacher reviews a specific student" },
+    act_overview_p2: { es: "Si la app llama a <em>attempt</em> o a <em>review</em> para una actividad dada se decide puramente del lado del cliente, a partir del flag <code>has_attemp</code> de esa actividad en el árbol de contenido cacheado: <code>has_attemp ? \"review\" : \"attemp\"</code>.",
+                       en: "Whether the app calls <em>attempt</em> or <em>review</em> for a given activity is decided purely client-side from that activity's <code>has_attemp</code> flag in the cached content tree: <code>has_attemp ? \"review\" : \"attemp\"</code>." },
+    act_warn1: { es: "Llamar a <strong>attempt</strong> no es idempotente — pegarle registra un intento nuevo del lado del servidor. El backend lo ha rechazado en pruebas con: <code>\"Before creating an attempt, the sum of the contents qualify weigth of the activity must be 100%\"</code> — una validación de autoría de contenido, no un bug del cliente, pero vale la pena manejarlo con cuidado en la UI del móvil.",
+                en: "Calling <strong>attempt</strong> is not idempotent — hitting it registers a new attempt server-side. The backend has rejected it in testing with: <code>\"Before creating an attempt, the sum of the contents qualify weigth of the activity must be 100%\"</code> — a content-authoring validation, not a client bug, but worth handling gracefully in the mobile UI." },
+    act_envelope_h3: { es: "El sobre de la respuesta (forma compartida)", en: "The response envelope (shared shape)" },
+    act_envelope_p: { es: "<code class=\"mono\">id_activity_percentage</code> es importante: es el id del <em>registro de calificación de este estudiante</em> para esta actividad, y es lo que se pide después para obtener el desglose calificado (ver <a href=\"#submitting\">Enviar respuestas</a>).",
+                      en: "<code class=\"mono\">id_activity_percentage</code> is important: it's the id of <em>this student's grade record</em> for this activity, and it's what you fetch afterward to get the graded breakdown (see <a href=\"#submitting\">Submitting answers</a>)." },
+
+    s_types_h2: { es: "Los tipos de actividad", en: "The activity types" },
+    types_p1: { es: "Hay <strong>24 tipos de actividad distintos</strong> en producción, cada uno con su propio widget de interacción y su propio esquema de contenido. Haz clic en cualquier fila para ver su forma y qué lo hace distinto.",
+                en: "There are <strong>24 distinct activity types</strong> in production, each its own interaction widget with a bespoke content schema. Click any row for its shape and what makes it distinct." },
+    t_dnd_p1: { es: "Arrastra palabras desde un banco de palabras mezclado hacia espacios en blanco (marcadores <code>%s</code>) dentro de oraciones. Este es el tipo capturado en vivo más abajo — ver <a href=\"#live-example\">Ejemplo real capturado</a> para su JSON crudo completo.",
+                en: "Drag words from a shuffled word bank into blanks (<code>%s</code> placeholders) inside sentences. This is the type captured live below — see <a href=\"#live-example\">Real captured example</a> for its full raw JSON." },
+    t_dnd_p2: { es: "<strong>Particularidad:</strong> la calificación del backend no penaliza el orden de las palabras dentro de una oración — el frontend revalida el orden por su cuenta (<code>isBlankOrderCorrect</code>) y puede marcar algo como incorrecto aunque el backend le haya dado 100%.",
+                en: "<strong>Quirk:</strong> the backend's grading doesn't penalize word order within a sentence — the frontend re-validates order itself (<code>isBlankOrderCorrect</code>) and can mark something wrong that the backend scored 100%." },
+    t_wans_p1: { es: "Campos de texto libre, uno por cada elemento de contenido, cada uno con su propio enunciado con espacio <code>%s</code>. La corrección vuelve como una simple lista de ids correctos/incorrectos, no como una comparación carácter por carácter.",
+                 en: "Free-text inputs, one per content item, each with its own <code>%s</code>-blanked prompt. Correctness comes back as a simple right/bad content-id list, not per-character diffing." },
+    t_sel_p1: { es: "La misma idea de llenar espacios que DND, pero con un desplegable de opciones en vez de arrastrar libremente. Tiene la lógica de reconciliación en revisión más defensiva de toda la app — el frontend superpone cinco heurísticas de corrección distintas porque se observa que los propios campos del backend (<code>percentage</code>, <code>bad_answers_contents_ids</code>, resultados por palabra) se contradicen entre sí.",
+                en: "Same blank-filling idea as DND, but via a dropdown of options instead of free dragging. Has the most defensive review-reconciliation logic in the whole app — the frontend layers five different correctness heuristics because the backend's own fields (<code>percentage</code>, <code>bad_answers_contents_ids</code>, per-word results) are observed to contradict each other." },
+    t_ord_p1: { es: "Reordenar fichas de palabras para reconstruir una oración. Este es el tipo de actividad detrás de la corrección del backend verificada anteriormente para la calificación sensible al orden.",
+                en: "Reorder word tiles to reconstruct a sentence. This is the activity type behind the backend fix verified earlier for order-sensitive grading." },
+    t_matline_p1: { es: "<code>questions</code> + <code>answers</code> mezcladas, cada elemento puede ser texto, imagen o audio (inferido por la extensión del archivo cuando el valor es una URL).",
+                    en: "<code>questions</code> + shuffled <code>answers</code>, each item can be text, image or audio (inferred from file extension when the value is a URL)." },
+    t_matdnd_p1: { es: "Como el emparejamiento por líneas, pero una pregunta puede tener <em>varias</em> respuestas seleccionadas — enviadas como un string de ids separados por coma.",
+                   en: "Like line-matching, but one question can take <em>multiple</em> selected answers — submitted as a comma-joined id string." },
+    t_pairs_p1: { es: "Juego de memoria, clic para emparejar. Cada par en la respuesta del backend se aplana en dos entradas de \"carta\" separadas que comparten un índice <code>match</code>, luego se mezclan en un mazo.",
+                  en: "Click-to-match memory game. Each pair in the backend response is flattened into two separate \"card\" entries sharing a <code>match</code> index, then shuffled into a deck." },
+    t_lstn_p1: { es: "<code>LSTN_AUD01</code> y <code>LSTN_READ21</code> no se califican (solo escuchar/leer, sin bloque <code>review</code> en absoluto). <code>LSTN10</code> sí se califica, comparando <code>percentage === qualify_weigth</code> de forma estricta.",
+                 en: "<code>LSTN_AUD01</code> and <code>LSTN_READ21</code> are ungraded (listen/read-along only, no <code>review</code> block at all). <code>LSTN10</code> is graded, comparing <code>percentage === qualify_weigth</code> strictly." },
+    t_rec_p1: { es: "El estudiante graba audio; se califica manualmente por un docente después vía el flujo de calificación (<code>activitypercentage/{id}/full</code>), no se autocalifica. El juego de roles divide el diálogo en dos roles de hablante extraídos del texto del contenido.",
+                en: "Student records audio; graded manually by a teacher later via the marking flow (<code>activitypercentage/{id}/full</code>), not auto-scored. Role play splits dialogue into two speaker roles parsed out of the content text." },
+    t_bio_p1: { es: "Solo informativo — biografías de personajes, sin calificación, sin objeto <code>review</code>.", en: "Informational only — character bios, no grading, no <code>review</code> object." },
+    t_tree_p1: { es: "Arrastrar nombres hacia un diagrama de árbol genealógico.", en: "Drag names onto a family-tree diagram." },
+    t_greet_p1: { es: "Calificación estricta <code>percentage === qualify_weigth</code>, misma salvedad que <code>LSTN10</code>.", en: "Strict <code>percentage === qualify_weigth</code> grading, same caveat as <code>LSTN10</code>." },
+    t_para_p1: { es: "Escritura libre más larga, calificable manualmente, lleva <code>feedback</code> del docente.", en: "Longer free-text writing, manually gradable, carries teacher <code>feedback</code>." },
+    t_wansopt_p1: { es: "Como <code>W_ANS04</code> pero devuelve un <code>percentage</code> crudo por respuesta en vez de un flag correcto/incorrecto — quien lo llama tiene que aplicarle un umbral.",
+                    en: "Like <code>W_ANS04</code> but returns a raw <code>percentage</code> per answer instead of a right/bad flag — caller has to threshold it." },
+    t_media_p1: { es: "Visor puro de video/imagen/audio. Sin calificación, sin envío.", en: "Pure video/image/audio viewer. No grading, no submission." },
+    t_tf_p1: { es: "Elección binaria por enunciado; devuelve <code>percentage</code> crudo.", en: "Binary choice per statement; returns raw <code>percentage</code>." },
+    t_wrt_p1: { es: "Misma familia que DND/Select, pero escrito en vez de arrastrado o seleccionado.", en: "Same family as DND/Select, but typed rather than dragged or selected." },
+    t_mchoice_p1: { es: "MCQ estándar. Esta es también la <em>única</em> forma que renderiza el módulo de Tests, sin importar el tipo real de la actividad subyacente — ver <a href=\"#tests\">Tests</a>.",
+                    en: "Standard MCQ. This is also the <em>only</em> shape the Tests module renders, regardless of the underlying activity's real type — see <a href=\"#tests\">Tests</a>." },
+    t_clk_p1: { es: "Sin calificar/autocomprobación — devuelve un simple arreglo de ids de contenido, sin flags de corrección.", en: "Ungraded/self-check — returns a plain array of content ids, no correctness flags." },
+    t_audptr_p1: { es: "Tocar la imagen que coincide con lo escuchado. El resultado viene del campo <code>attempt_report.right_answer</code> por contenido.",
+                   en: "Tap the picture matching what's heard. Result comes from the per-content <code>attempt_report.right_answer</code> field." },
+    t_alph_p1: { es: "Divide el contenido en grupos de un solo carácter (\"letras\") vs. varios caracteres (\"palabras\"), cada uno con su propio audio de pronunciación.",
+                 en: "Splits content into single-character (\"letters\") vs. multi-character (\"words\") buckets, each with its own pronunciation audio." },
+
+    pct_groups_h3: { es: "Seis formas distintas de leer \"¿está correcto?\"", en: "Six different ways to read \"is this correct?\"" },
+    pct_groups_p: { es: "El backend no devuelve un único campo de corrección consistente. Según el tipo de actividad, el frontend lee uno de estos seis patrones:",
+                    en: "The backend doesn't return one consistent correctness field. Depending on the activity type, the frontend reads one of these six patterns:" },
+    pct_th_group: { es: "Patrón", en: "Pattern" }, pct_th_formula: { es: "Qué hace el frontend", en: "What the frontend does" }, pct_th_types: { es: "Tipos", en: "Types" },
+    pct_g1_name: { es: "Lista de ids", en: "Id list" },
+    pct_g1_types: { es: "W_ANS04, LSTN_REC06, LSTN_REC0BYROLE7, W_PARAGRAPH19", en: "W_ANS04, LSTN_REC06, LSTN_REC0BYROLE7, W_PARAGRAPH19" },
+    pct_g2_name: { es: "Booleano &gt; 0", en: "Boolean &gt; 0" },
+    pct_g2_types: { es: "MAT(LINE)07, ORD_S(DND)03, TREE(DnD)13, COMP_S(WRT)12", en: "MAT(LINE)07, ORD_S(DND)03, TREE(DnD)13, COMP_S(WRT)12" },
+    pct_g3_name: { es: "Igualdad estricta (bug)", en: "Strict equality (bug)" },
+    pct_g3_types: { es: "LSTN10, AUD_GREET18", en: "LSTN10, AUD_GREET18" },
+    pct_g4_name: { es: "Porcentaje crudo", en: "Raw percentage" },
+    pct_g4_types: { es: "W_ANS(Opt_pro)17, T_F15, M_CHOICE20, AUD_PTR_MATCH23", en: "W_ANS(Opt_pro)17, T_F15, M_CHOICE20, AUD_PTR_MATCH23" },
+    pct_g5_name: { es: "Sin calificar", en: "Ungraded" },
+    pct_g5_types: { es: "LSTN_AUD01, CLK_PTR22, BIOC_ACT01, W_MEDIA02, LSTN_READ21, ALPH_NUM09", en: "LSTN_AUD01, CLK_PTR22, BIOC_ACT01, W_MEDIA02, LSTN_READ21, ALPH_NUM09" },
+    pct_g6_name: { es: "Heurística a medida", en: "Custom heuristic" },
+    pct_g6_types: { es: "COMP_S(DND)08, COMP_S(SEL)11, MAT(DND)05", en: "COMP_S(DND)08, COMP_S(SEL)11, MAT(DND)05" },
+    pct_groups_warn: { es: "<strong>Para el móvil:</strong> no existe \"una\" regla de corrección a portar — hay que replicar la lógica tipo por tipo. El patrón de <strong>igualdad estricta</strong> es, además, un bug conocido: el backend manda <code>percentage</code> como número y <code>qualify_weigth</code> como string (<code>20</code> vs <code>\"20.00\"</code>), así que <code>===</code> puede dar falso incluso cuando la respuesta sí es 100% correcta.",
+                      en: "<strong>For mobile:</strong> there's no single correctness rule to port — the logic has to be replicated type by type. The <strong>strict equality</strong> pattern is also a known bug: the backend sends <code>percentage</code> as a number and <code>qualify_weigth</code> as a string (<code>20</code> vs <code>\"20.00\"</code>), so <code>===</code> can read false even when the answer really is 100% correct." },
+
+    d_dnd_s_h: { es: "Cómo se parte el <code>%s</code>", en: "How <code>%s</code> is split" },
+    d_dnd_s_p1: { es: "El banco de palabras completo sale de <strong>un solo lugar</strong>: <code>content[0].content_option[0].text</code>, partido por <code>%s</code> y recortado — ej. <code>\"blazer %s boots %s coat\"</code> → <code>[\"blazer\",\"boots\",\"coat\"]</code>. Ese arreglo se mezcla una vez (<code>Ramdom()</code>) y se reutiliza como <code>arrayWords</code> para <strong>todas</strong> las preguntas de la actividad, no una lista distinta por pregunta.",
+                 en: "The whole word bank comes from <strong>one single place</strong>: <code>content[0].content_option[0].text</code>, split on <code>%s</code> and trimmed — e.g. <code>\"blazer %s boots %s coat\"</code> → <code>[\"blazer\",\"boots\",\"coat\"]</code>. That array is shuffled once (<code>Ramdom()</code>) and reused as <code>arrayWords</code> for <strong>every</strong> question in the activity, not a separate list per question." },
+    d_dnd_s_p2: { es: "Cada oración (<code>content[i].text</code>, ej. <code>\"casual wear: %s %s %s %s\"</code>) se parte con <code>text.split(/(%s)/)</code> — como la regex usa un grupo de captura, el propio marcador <code>%s</code> queda <strong>dentro</strong> del arreglo resultante en vez de desaparecer. Eso es lo que le permite a la UI saber exactamente dónde dibujar cada casilla para soltar una palabra, intercalada con el texto literal.",
+                 en: "Each sentence (<code>content[i].text</code>, e.g. <code>\"casual wear: %s %s %s %s\"</code>) is split with <code>text.split(/(%s)/)</code> — because the regex uses a capture group, the <code>%s</code> marker itself stays <strong>inside</strong> the resulting array instead of disappearing. That's what lets the UI know exactly where to draw each drop slot, interleaved with the literal text." },
+    d_dnd_c_h: { es: "Cómo se interpreta la corrección", en: "How correctness is read" },
+    d_dnd_c_p1: { es: "El backend <strong>no penaliza el orden</strong> para este tipo — si el estudiante usó las palabras correctas en cualquier orden, igual regresa <code>percentage === qualify_weigth</code> (100%). El frontend corrige esto por su cuenta con <code>isBlankOrderCorrect(template, userAnswer, rightAnswer)</code>: aplica la misma función <code>extractBlanksFromTemplate</code> a la respuesta del usuario y a la <code>right_answer</code> del backend (convierte la plantilla con <code>%s</code> en una expresión regular con grupos <code>(.*?)</code> por cada hueco) y compara, hueco por hueco, si las palabras extraídas coinciden en la misma posición.",
+                 en: "The backend does <strong>not penalize order</strong> for this type — if the student used the right words in any order, it still returns <code>percentage === qualify_weigth</code> (100%). The frontend corrects this itself with <code>isBlankOrderCorrect(template, userAnswer, rightAnswer)</code>: it runs the same <code>extractBlanksFromTemplate</code> function on both the user's answer and the backend's <code>right_answer</code> (turning the <code>%s</code> template into a regex with a <code>(.*?)</code> capture group per blank) and compares, blank by blank, whether the extracted words match in the same position." },
+    d_dnd_c_p2: { es: "Para el desglose palabra por palabra: si <code>content_option[0].attempt_report.data.results</code> viene vacío (pasa seguido), el frontend lo <strong>reconstruye a mano</strong> — recorta el prefijo literal de la oración tanto de la respuesta del usuario como de la <code>right_answer</code>, y luego va comparando palabra por palabra contra la lista completa de palabras posibles (ordenadas de más larga a más corta, para no hacer match parcial), marcando cada una <code>\"correct\"</code>/<code>\"wrong\"</code> según si coincide exactamente con la de <code>right_answer</code> en esa posición.",
+                 en: "For the word-by-word breakdown: if <code>content_option[0].attempt_report.data.results</code> comes back empty (happens often), the frontend <strong>rebuilds it by hand</strong> — it strips the sentence's literal prefix from both the user's answer and the <code>right_answer</code>, then matches word by word against the full list of possible words (sorted longest-first, to avoid partial matches), marking each one <code>\"correct\"</code>/<code>\"wrong\"</code> based on whether it exactly matches <code>right_answer</code>'s word at that position." },
+    d_dnd_src: { es: "Ver <a href=\"#live-example\">Ejemplo real capturado</a> para el JSON crudo completo de este tipo.", en: "See <a href=\"#live-example\">Real captured example</a> for this type's full raw JSON." },
+
+    d_sel_s_h: { es: "Cómo se parte el <code>%s</code>", en: "How <code>%s</code> is split" },
+    d_sel_s_p1: { es: "<code>sentences = item.text.split(/(%s)/)</code> — igual que DND, conserva el marcador <code>%s</code> en el arreglo para saber dónde va el desplegable. Las <strong>opciones</strong> del desplegable salen de <code>content_option[0].text.split(\"%s\")</code> (recortadas y mezcladas con <code>Ramdom()</code>) — a diferencia de DND, aquí sí hay un <code>content_option</code> con sus propias opciones por cada pregunta, en vez de un único banco global.",
+                 en: "<code>sentences = item.text.split(/(%s)/)</code> — same as DND, keeps the <code>%s</code> marker in the array to know where the dropdown goes. The dropdown's <strong>options</strong> come from <code>content_option[0].text.split(\"%s\")</code> (trimmed and shuffled with <code>Ramdom()</code>) — unlike DND, here each question has its own <code>content_option</code> with its own options, instead of one shared global bank." },
+    d_sel_c_h: { es: "Cómo se interpreta la corrección (la más compleja de toda la app)", en: "How correctness is read (the most complex in the whole app)" },
+    d_sel_c_p1: { es: "El frontend aplica <strong>cinco reglas en cascada</strong>, en este orden exacto, porque se observó que los campos del backend se contradicen entre sí:",
+                  en: "The frontend applies <strong>five cascading rules</strong>, in this exact order, because the backend's own fields were observed to contradict each other:" },
+    d_sel_li1: { es: "<strong>Reconstrucción cuando faltan resultados:</strong> si <code>attempt_report.data.results</code> viene vacío pero sí llega <code>user_answer</code>, el frontend recorta el prefijo/sufijo literal de la plantilla alrededor del <code>%s</code> (<code>template.split(\"%s\")</code>) para extraer solo la palabra elegida.",
+               en: "<strong>Reconstruction when results are missing:</strong> if <code>attempt_report.data.results</code> comes back empty but <code>user_answer</code> is present, the frontend strips the template's literal prefix/suffix around the <code>%s</code> (<code>template.split(\"%s\")</code>) to extract just the chosen word." },
+    d_sel_li2: { es: "<strong><code>allDetailsCorrect</code>:</strong> si cada entrada de <code>results</code> dice <code>\"correct\"</code> o <code>\"right\"</code>, se considera correcto aunque <code>percentage</code> diga otra cosa.",
+               en: "<strong><code>allDetailsCorrect</code>:</strong> if every entry in <code>results</code> says <code>\"correct\"</code> or <code>\"right\"</code>, it's treated as correct even if <code>percentage</code> says otherwise." },
+    d_sel_li3: { es: "<strong>Comparación de string exacta (la más confiable):</strong> si <code>item.answer.trim() === attempt_report.right_answer.trim()</code>, es correcto sin importar nada más — se le da más peso que a cualquier otro campo.",
+               en: "<strong>Exact string match (the most trustworthy signal):</strong> if <code>item.answer.trim() === attempt_report.right_answer.trim()</code>, it's correct no matter what else says — given more weight than any other field." },
+    d_sel_li4: { es: "<strong><code>bad_answers_contents_ids</code>:</strong> si el id del contenido está explícitamente en esa lista, se marca incorrecto.",
+               en: "<strong><code>bad_answers_contents_ids</code>:</strong> if the content's id is explicitly in that list, it's marked incorrect." },
+    d_sel_li5: { es: "<strong>Respaldo final:</strong> <code>item.percentage &gt; 0 || allDetailsCorrect</code>.", en: "<strong>Final fallback:</strong> <code>item.percentage &gt; 0 || allDetailsCorrect</code>." },
+
+    d_wans_p1: { es: "<strong><code>%s</code>:</strong> cada <code>content[i].text</code> trae como mucho un <code>%s</code>, que se reemplaza directamente por guiones bajos para mostrarlo: <code>item.text.replaceAll(\"%s\", \"____\")</code> — es puramente visual, no se usa para extraer nada.",
+                en: "<strong><code>%s</code>:</strong> each <code>content[i].text</code> carries at most one <code>%s</code>, which gets replaced straight with underscores for display: <code>item.text.replaceAll(\"%s\", \"____\")</code> — it's purely visual, not used to extract anything." },
+    d_wans_p2: { es: "<strong>Corrección:</strong> no se usa <code>percentage</code> en absoluto. Cada respuesta se clasifica comparando su <code>id</code> contra dos arreglos de nivel superior de la actividad: <code>getCheckAnswer(id, right_answers_contents_ids, bad_answers_contents_ids)</code> devuelve <code>\"right\"</code>, <code>\"bad\"</code> o <code>\"none\"</code> según en cuál lista aparezca el id.",
+                en: "<strong>Correctness:</strong> <code>percentage</code> isn't used at all. Each answer is classified by checking its <code>id</code> against two top-level arrays on the activity: <code>getCheckAnswer(id, right_answers_contents_ids, bad_answers_contents_ids)</code> returns <code>\"right\"</code>, <code>\"bad\"</code> or <code>\"none\"</code> depending which list the id appears in." },
+
+    d_ord_p1: { es: "<strong>Fichas:</strong> las palabras a ordenar vienen de <code>content_option[0].text</code> con <code>splitText: true</code> — el componente las separa por su cuenta en la UI (no hay <code>%s</code> aquí, es una sola oración desordenada).",
+                en: "<strong>Tiles:</strong> the words to order come from <code>content_option[0].text</code> with <code>splitText: true</code> — the component splits them itself in the UI (there's no <code>%s</code> here, it's a single scrambled sentence)." },
+    d_ord_p2: { es: "<strong>Corrección:</strong> <code>item.percentage &gt; 0</code>. El desglose palabra por palabra SÍ viene listo del backend en <code>content_option[0].attempt_report.data.results</code> — el frontend solo recorre esa lista y, para cada palabra marcada <code>\"wrong\"</code>, muestra <code>correct_word</code> en vez de lo que escribió el estudiante.",
+                en: "<strong>Correctness:</strong> <code>item.percentage &gt; 0</code>. The word-by-word breakdown DOES come ready-made from the backend in <code>content_option[0].attempt_report.data.results</code> — the frontend just walks that list and, for each word marked <code>\"wrong\"</code>, shows <code>correct_word</code> instead of what the student typed." },
+
+    d_wrt_p1: { es: "<strong><code>%s</code>:</strong> igual que DND/Select, <code>item.text.split(/(%s)/)</code> conservando el marcador, pero aquí cada <code>%s</code> se reemplaza en la UI por un campo de texto en vez de un espacio para arrastrar o un desplegable.",
+                en: "<strong><code>%s</code>:</strong> same as DND/Select, <code>item.text.split(/(%s)/)</code> keeping the marker, but here each <code>%s</code> is replaced in the UI by a text field instead of a drop slot or a dropdown." },
+    d_wrt_p2: { es: "<strong>Corrección:</strong> <code>item.percentage &gt; 0</code>. El resultado y la plantilla para mostrar el detalle salen directo de <code>content_option[0].attempt_report.data.results</code> / <code>.template</code>, sin reconstrucción propia como en DND.",
+                en: "<strong>Correctness:</strong> <code>item.percentage &gt; 0</code>. The result and template shown as detail come straight from <code>content_option[0].attempt_report.data.results</code> / <code>.template</code>, with no reconstruction of its own like DND does." },
+
+    d_matdnd_p1: { es: "Como el emparejamiento por líneas, pero una pregunta puede tener <em>varias</em> respuestas — se envían como <code>answer: \"501,502,503\"</code> (ids separados por coma).",
+                   en: "Like line-matching, but one question can have <em>several</em> answers — sent as <code>answer: \"501,502,503\"</code> (comma-separated ids)." },
+    d_matdnd_p2: { es: "<strong>Corrección — el único tipo con <code>percentage_details</code>:</strong> en vez de leer <code>item.percentage</code>, el frontend parte <code>answer</code> por coma y, <strong>por cada id seleccionado</strong>, busca su propia entrada dentro de <code>question.percentage_details</code> (un arreglo con un <code>{ id, correct }</code> por cada opción posible) — así puede marcar una selección múltiple como \"2 de 3 correctas\" en vez de un solo booleano para toda la pregunta.",
+                   en: "<strong>Correctness — the only type with <code>percentage_details</code>:</strong> instead of reading <code>item.percentage</code>, the frontend splits <code>answer</code> on commas and, <strong>for each selected id</strong>, looks up its own entry inside <code>question.percentage_details</code> (an array with one <code>{ id, correct }</code> per possible option) — so a multi-select can be marked \"2 of 3 correct\" instead of one boolean for the whole question." },
+
+    d_rec_p1: { es: "<strong><code>LSTN_REC06</code>:</strong> si <code>item.text</code> contiene <code>%s</code>, se parte en dos con <code>split(\"%s\")</code>: la parte antes es el <code>name</code> (quién habla) y la de después es el <code>text</code> (la línea). Si no hay <code>%s</code>, todo el texto pasa como <code>text</code> y no hay <code>name</code>.",
+                en: "<strong><code>LSTN_REC06</code>:</strong> if <code>item.text</code> contains <code>%s</code>, it's split in two with <code>split(\"%s\")</code>: the part before is the <code>name</code> (who's speaking) and the part after is the <code>text</code> (the line). With no <code>%s</code>, the whole text passes through as <code>text</code> and there's no <code>name</code>." },
+    d_rec_p2: { es: "<strong><code>LSTN_REC0BYROLE7</code> (juego de roles):</strong> primero separa <code>observations.split(/(%s)/)</code> para sacar los nombres de los dos roles (<code>roles[0]</code> y <code>roles[2]</code>, limpiando HTML inyectado con <code>DOMParser</code>). Luego, por cada línea de diálogo, vuelve a partir <code>item.text</code> por <code>%s</code> para obtener de quién es el turno — y le quita los dos puntos finales (<code>\"Emma:\" → \"Emma\"</code>) con <code>.replace(/\\s*:\\s*$/, \"\")</code>, porque si no, nunca calza exactamente con el nombre sacado de <code>observations</code> y la grabadora no resalta ningún turno.",
+                en: "<strong><code>LSTN_REC0BYROLE7</code> (role play):</strong> it first splits <code>observations.split(/(%s)/)</code> to get the two role names (<code>roles[0]</code> and <code>roles[2]</code>, stripping injected HTML with <code>DOMParser</code>). Then, for each dialogue line, it splits <code>item.text</code> on <code>%s</code> again to get whose turn it is — and strips the trailing colon (<code>\"Emma:\" → \"Emma\"</code>) with <code>.replace(/\\s*:\\s*$/, \"\")</code>, because otherwise it never exactly matches the name pulled from <code>observations</code> and the recorder never highlights any turn." },
+    d_rec_p3: { es: "<strong>Corrección:</strong> ninguno de los dos se autocalifica — ambos usan <code>getCheckAnswer()</code> contra <code>right_answers_contents_ids</code>/<code>bad_answers_contents_ids</code>, que el backend llena después de que un docente califica el audio manualmente vía <code>activitypercentage/{id}/full</code>.",
+                en: "<strong>Correctness:</strong> neither self-grades — both use <code>getCheckAnswer()</code> against <code>right_answers_contents_ids</code>/<code>bad_answers_contents_ids</code>, which the backend fills in after a teacher manually grades the audio via <code>activitypercentage/{id}/full</code>." },
+
+    d_tf_p1: { es: "<strong><code>%s</code>:</strong> el enunciado reemplaza <code>%s</code> por guiones bajos igual que W_ANS04 (<code>text.replace(/\\n/g,\"\").replaceAll(\"%s\",\"____\")</code>); las dos opciones (Verdadero/Falso, o las que sean) salen de <code>content_option[0].text.split(\"%s\")</code>. <strong>Corrección:</strong> devuelve <code>percentage</code> crudo por respuesta, sin booleano calculado.",
+               en: "<strong><code>%s</code>:</strong> the statement replaces <code>%s</code> with underscores just like W_ANS04 (<code>text.replace(/\\n/g,\"\").replaceAll(\"%s\",\"____\")</code>); the two options (True/False, or whatever they are) come from <code>content_option[0].text.split(\"%s\")</code>. <strong>Correctness:</strong> returns a raw <code>percentage</code> per answer, no computed boolean." },
+
+    d_audptr_p1: { es: "<strong><code>%s</code>:</strong> se reemplaza por guiones bajos igual que W_ANS04/T_F15. <strong>Corrección:</strong> trae tanto el <code>percentage</code> crudo como, cuando el intento ya se procesó (<code>attempt_report.state === 200</code>), el texto de <code>attempt_report.right_answer</code> para mostrar cuál era la respuesta correcta.",
+                   en: "<strong><code>%s</code>:</strong> replaced with underscores just like W_ANS04/T_F15. <strong>Correctness:</strong> carries both the raw <code>percentage</code> and, once the attempt has been processed (<code>attempt_report.state === 200</code>), the <code>attempt_report.right_answer</code> text to show what the correct answer was." },
+
+    d_noscore_p1: { es: "<code>LSTN_AUD01</code> y <code>LSTN_READ21</code> ni siquiera tienen bloque <code>review</code> — solo reproducir/leer. <code>CLK_PTR22</code> sí tiene <code>review.answers</code>, pero es solo un arreglo plano de ids de contenido (sin corrección) — autocomprobación, no calificación real.",
+                     en: "<code>LSTN_AUD01</code> and <code>LSTN_READ21</code> don't even have a <code>review</code> block — just play/read. <code>CLK_PTR22</code> does have <code>review.answers</code>, but it's just a plain array of content ids (no correctness) — self-check, not real grading." },
+
+    d_lstn10_p1: { es: "<strong><code>%s</code>:</strong> si <code>item.text</code> lo trae, se parte en <code>name</code>/<code>text</code> igual que LSTN_REC06. <strong>Corrección (bug conocido):</strong> <code>item.percentage === item.qualify_weigth</code> con <code>===</code> estricto — sin el <code>Number()</code> que sí usan otros tipos, así que puede fallar si uno llega como número y el otro como string.",
+                 en: "<strong><code>%s</code>:</strong> if <code>item.text</code> carries it, it's split into <code>name</code>/<code>text</code> just like LSTN_REC06. <strong>Correctness (known bug):</strong> <code>item.percentage === item.qualify_weigth</code> with strict <code>===</code> — without the <code>Number()</code> coercion other types use, so it can fail when one side arrives as a number and the other as a string." },
+
+    d_pairs_p1: { es: "Cada par <code>content[i]</code> + <code>content_option[0]</code> se aplana en <strong>dos</strong> \"cartas\" separadas que comparten un índice <code>match: index</code>, y luego se mezclan juntas en un mazo con <code>Ramdom()</code>. No hay <code>%s</code> ni <code>percentage</code> por carta — la validación de \"¿emparejó bien?\" es puramente del lado del cliente, comparando que las dos cartas volteadas compartan el mismo <code>match</code>.",
+                 en: "Each <code>content[i]</code> + <code>content_option[0]</code> pair is flattened into <strong>two</strong> separate \"cards\" sharing a <code>match: index</code>, then shuffled together into one deck with <code>Ramdom()</code>. There's no <code>%s</code> or <code>percentage</code> per card — validating \"did this match correctly?\" is purely client-side, by checking that the two flipped cards share the same <code>match</code>." },
+
+    d_info_p1: { es: "Ninguno de los dos trae objeto <code>review</code> en la respuesta — no son calificables, solo presentan contenido (biografías / video-imagen-audio).",
+                 en: "Neither one carries a <code>review</code> object in the response — they're not gradable, just content to present (bios / video-image-audio)." },
+
+    types_warn1: { es: "Algunas carpetas bajo <code>Activity/</code> en el repositorio (<code>Challenge1C21</code>, <code>Challenge_1B41</code>, <code>Challenge_1C31</code>, <code>Challenge_1D12</code>, <code>Challenge_2D12</code>, <code>completeSentences</code>) existen pero <strong>no están conectadas al switch</strong> que elige un componente a partir de <code>activity_type.code</code>. Confirma con el equipo si son legado o están en progreso antes de tratarlas como parte del catálogo real.",
+                  en: "A handful of folders under <code>Activity/</code> in the repo (<code>Challenge1C21</code>, <code>Challenge_1B41</code>, <code>Challenge_1C31</code>, <code>Challenge_1D12</code>, <code>Challenge_2D12</code>, <code>completeSentences</code>) exist but are <strong>not wired into the type-dispatch switch</strong> that picks a component from <code>activity_type.code</code>. Confirm with the team whether these are legacy or in-progress before treating them as part of the real catalogue." },
+
+    s_process_h2: { es: "El campo <code>process</code>", en: "The <code>process</code> field" },
+    process_p1: { es: "<code>process</code> no es un tipo de actividad — es una pista por elemento de contenido que se envía <em>junto con la respuesta</em>, diciéndole al motor de calificación del backend cómo validar esa pieza específica. Aparecen cuatro valores en todo el código:",
+                  en: "<code>process</code> is not an activity type — it's a per-content-item hint sent <em>with the answer</em>, telling the backend's grading engine how to validate that specific piece. Four values appear anywhere in the codebase:" },
+    th_value: { es: "Valor", en: "Value" }, th_meaning: { es: "Significado", en: "Meaning" }, th_usedby: { es: "Usado por", en: "Used by" },
+    proc_tr1: { es: "Comparación de igualdad directa contra una sola respuesta correcta", en: "Direct equality check against one right answer" },
+    proc_tr1u: { es: "La mayoría de los tipos — W_ANS04, tipo MCQ, pares de memoria, orden, tipos de clic/toque", en: "Most types — W_ANS04, MCQ-style selects, memory pairs, order, click/tap types" },
+    proc_tr2: { es: "Varios espacios en una sola oración; se valida la oración completa reconstruida contra una plantilla", en: "Multiple blanks in one sentence; the whole reconstructed sentence is validated against a template" },
+    proc_tr2u: { es: "COMP_S(DND)08, COMP_S(SEL)11, COMP_S(WRT)12", en: "COMP_S(DND)08, COMP_S(SEL)11, COMP_S(WRT)12" },
+    proc_tr3: { es: "Emparejamiento uno a uno (padre → un id hijo)", en: "One-to-one pairing (parent → one child id)" },
+    proc_tr3u: { es: "MAT(LINE)07, TREE(DnD)13", en: "MAT(LINE)07, TREE(DnD)13" },
+    proc_tr4: { es: "Una pregunta se empareja con varios ids seleccionados (unidos por coma)", en: "One question maps to several selected ids (comma-joined)" },
+    proc_tr4u: { es: "MAT(DND)05", en: "MAT(DND)05" },
+
+    s_submit_h2: { es: "Enviar respuestas", en: "Submitting answers" },
+    submit_p1: { es: "Un solo servicio compartido (<code>GetResultsActivity</code>) maneja el envío para prácticamente todos los tipos de actividad dentro de una lección. Es un ida-y-vuelta de dos pasos:",
+                 en: "One shared service (<code>GetResultsActivity</code>) handles submission for essentially every in-lesson activity type. It's a two-step round trip:" },
+    submit_step1_h: { es: "Enviar las respuestas", en: "Submit the answers" },
+    submit_step1_p: { es: "Si tiene éxito, la app también vuelve a pedir todo el árbol de unidad/lección/actividad en segundo plano, para que el estado de desbloqueo y las barras de progreso se actualicen de inmediato.",
+                      en: "On success, the app also re-fetches the whole unit/lesson/activity tree in the background, so unlock state and progress bars update immediately." },
+    submit_step2_h: { es: "Pedir el desglose calificado", en: "Fetch the graded breakdown" },
+    submit_step2_p: { es: "El frontend reduce esto a <code>{ totalContents, totalCorrects, totalIncorrects, percentage, answers: [{id, correct}] }</code> para la UI.",
+                      en: "The frontend reduces this into <code>{ totalContents, totalCorrects, totalIncorrects, percentage, answers: [{id, correct}] }</code> for the UI." },
+    submit_warn1: { es: "<strong>Bug de coerción de tipos a tener en cuenta:</strong> la corrección se calcula como <code>Number(percentage) === Number(qualify_weigth)</code> en la mayoría de los lugares, específicamente porque el backend envía <code>percentage</code> como número pero <code>qualify_weigth</code> como un string numérico (<code>20</code> vs <code>\"20.00\"</code>). Algunos tipos de actividad (<code>LSTN10</code>, <code>AUD_GREET18</code>, y el propio manejador de envío del componente Unscrambell) todavía usan <code>===</code> estricto sin coerción — un bug de corrección latente que el equipo móvil no debería copiar.",
+                  en: "<strong>Type-coercion bug to know about:</strong> correctness is computed as <code>Number(percentage) === Number(qualify_weigth)</code> in most places, specifically because the backend sends <code>percentage</code> as a number but <code>qualify_weigth</code> as a numeric <em>string</em> (<code>20</code> vs <code>\"20.00\"</code>). A few activity types (<code>LSTN10</code>, <code>AUD_GREET18</code>, and the Unscrambell component's own submit handler) still use strict <code>===</code> without coercion — a latent correctness bug the mobile team shouldn't copy." },
+
+    s_attempts_h2: { es: "Modelo de intentos", en: "Attempts model" },
+    attempts_p1: { es: "No hay ningún contador de intentos del lado del cliente en todo este código base. Los intentos son enteramente estado del lado del servidor, creado como efecto secundario de llamar al propio endpoint de <strong>attempt</strong>.",
+                   en: "There is no client-side attempt counter anywhere in this codebase. Attempts are entirely server-side state, created as a side effect of calling the <strong>attempt</strong> endpoint itself." },
+    att_card1: { es: "Entero reportado por el backend, por estudiante y por actividad. Cada componente de actividad lo lee para deshabilitar su botón de \"repetir\" una vez que se llega al máximo.",
+                 en: "Backend-reported integer, per student per activity. Every activity component reads it to disable its \"repeat\" button once the max is hit." },
+    att_card2: { es: "Booleano en cada nodo de actividad dentro del árbol de contenido. Es la verdadera condición para \"modo review vs. attempt\" y para si el botón \"Siguiente\" de la Lección está habilitado — distinto del contador numérico de arriba.",
+                 en: "Boolean on each activity node in the content tree. The real gate for \"review vs. attempt mode\" and for whether the Lesson's \"Next\" button is enabled — distinct from the numeric counter above." },
+    att_card3: { es: "Objeto de detalle por <code>content_option</code>: <code>{ state, right_answer, data: { results, user_answer, template } }</code>. Muy explotado por los tipos de actividad de arrastrar/ordenar/seleccionar para armar desgloses correcto/incorrecto palabra por palabra.",
+                 en: "Per-<code>content_option</code> detail object: <code>{ state, right_answer, data: { results, user_answer, template } }</code>. Mined heavily by the drag/order/select activity types to build word-level correct/wrong breakdowns." },
+    att_card4: { es: "Constante del lado del frontend, no se pide al backend: <strong>5</strong> en producción, <strong>100</strong> en el build de dev. Una vez que <code>actual_attempts &gt;= MAX_ATTEMPTS</code>, los botones de reintentar desaparecen.",
+                 en: "Frontend-side constant, not fetched from the backend: <strong>5</strong> in production, <strong>100</strong> in the dev build. Once <code>actual_attempts &gt;= MAX_ATTEMPTS</code>, retry buttons disappear." },
+    attempts_note1: { es: "<strong>Sobre <code>average_attempts</code>:</strong> no existe en ninguna parte de la lógica de este frontend — es un agregado de solo reporte que viene pre-calculado desde <code>group/{idGroup}/me_skills</code> (ver <a href=\"#progress\">Progreso</a>). No hay ninguna fórmula que portar; trátalo como un valor del backend para mostrar, no para calcular.",
+                     en: "<strong>On <code>average_attempts</code>:</strong> doesn't exist anywhere in this frontend's logic — it's a report-only aggregate that comes pre-computed from <code>group/{idGroup}/me_skills</code> (see <a href=\"#progress\">Progress</a>). There's no formula to port; treat it as a backend value to display, not calculate." },
+
+    s_live_h2: { es: "Ejemplo real capturado", en: "Real captured example" },
+    live_p1: { es: "Capturado en vivo desde una lección real en esta sesión (cuenta <code>758418923</code>, API de producción) — una actividad <code>COMP_S(DND)08</code> \"Complete Sentence (Drag &amp; Drop)\" sobre vocabulario de ropa, antes de cualquier intento:",
+               en: "Captured live from a real lesson in this session (account <code>758418923</code>, production API) — a <code>COMP_S(DND)08</code> \"Complete Sentence (Drag &amp; Drop)\" activity about clothing vocabulary, before any attempt:" },
+    live_src: { es: "Capturado parcheando <code>window.fetch</code> mientras se navegaba la app real — estado 200, API de producción (<code>sauco.abblo.com.co</code>). Las URLs de imagen son links pre-firmados de DigitalOcean Spaces, válidos 48 horas desde que se emiten.",
+                en: "Captured via a patched <code>window.fetch</code> while navigating the real app — status 200, production API (<code>sauco.abblo.com.co</code>). Image URLs are DigitalOcean Spaces pre-signed links, valid 48 hours from issue." },
+    live_p2: { es: "Nota los cuatro marcadores <code>%s</code> por elemento de contenido (<code>\"casual wear: %s %s %s %s\"</code>) — el estudiante arrastra 4 de las palabras de <code>content_option[0].text</code> (separadas por <code>%s</code>) hacia esos espacios. Cada una de las 4 preguntas vale <code>qualify_weigth: \"25.00\"</code>, sumando 100 — coincidiendo con la regla de validación del backend de \"los pesos deben sumar 100%\" mencionada en <a href=\"#activities-overview\">Cómo funciona una actividad</a>.",
+               en: "Note the four <code>%s</code> placeholders per content item (<code>\"casual wear: %s %s %s %s\"</code>) — the student drags 4 of the words from <code>content_option[0].text</code> (pipe-separated by <code>%s</code>) into those slots. Each of the 4 questions is worth <code>qualify_weigth: \"25.00\"</code>, summing to 100 — matching the backend's \"weights must sum to 100%\" validation rule mentioned under <a href=\"#activities-overview\">How an activity works</a>." },
+
+    s_tests_h2: { es: "El módulo de Tests", en: "The Tests module" },
+    tests_p1: { es: "Un <strong>Test</strong> es simplemente la <em>última lección de una unidad</em>, presentada de forma distinta: como una secuencia de actividades dentro de un wizard a pantalla completa, en vez de una actividad por página.",
+                en: "A <strong>Test</strong> is simply the <em>last lesson of a unit</em>, presented differently: as a sequence of activities inside one full-screen wizard, instead of one activity per page." },
+    tests_card1_h: { es: "Límite de alcance importante", en: "Important scoping limit" },
+    tests_card1_p: { es: "Sin importar el <code>activity_type.code</code> real de la actividad subyacente, la UI de Tests <strong>solo renderiza un widget de opción múltiple</strong>. El rico catálogo de 24 tipos de arriba es un concepto exclusivo de Lección — los Tests aplanan todo a MCQ.",
+                     en: "Regardless of the underlying activity's real <code>activity_type.code</code>, the Tests UI <strong>only ever renders a multiple-choice widget</strong>. The rich 24-type catalogue above is a Lesson-only concept — Tests flatten everything to MCQ." },
+    tests_card2_h: { es: "El endpoint de envío es distinto", en: "Submission endpoint differs" },
+    tests_card2_p: { es: "<code class=\"mono\">POST activity/{id}/answers</code> — sin el segmento <code>/group/{idGroup}/</code>, a diferencia del endpoint de envío de Lección. Fácil de pasar por alto al portar.",
+                     en: "<code class=\"mono\">POST activity/{id}/answers</code> — no <code>/group/{idGroup}/</code> segment, unlike the Lesson submission endpoint. Easy to miss when porting." },
+    tests_retry_h: { es: "Semántica de reintentos", en: "Retry semantics" },
+    tests_retry_li1: { es: "<strong>Por actividad, a mitad del test:</strong> sin reintento — una vez respondida, se avanza a la siguiente actividad de la secuencia.",
+                       en: "<strong>Per-activity, mid-test:</strong> no retry — once answered, you move to the next activity in the sequence." },
+    tests_retry_li2: { es: "<strong>Todo el test:</strong> \"Repetir Test\" reinicia todo el wizard, limitado por el mismo <code>MAX_ATTEMPTS</code> (5 prod / 100 dev) contra el propio contador de intentos del test.",
+                       en: "<strong>Whole test:</strong> \"Repeat Test\" resets the whole wizard, gated by the same <code>MAX_ATTEMPTS</code> (5 prod / 100 dev) against the test's own attempt counter." },
+    tests_complete_h: { es: "Modal de nivel completado", en: "Level-completion modal" },
+    tests_complete_p: { es: "Al terminar un test se revisa si hay una lección o unidad siguiente en el árbol de contenido. Si de verdad no queda nada, se dispara un modal de felicitación: <em>\"Congratulations, level completed!\"</em> — este es el <strong>único</strong> lugar en toda la app con una celebración explícita de \"ya terminaste\". La navegación normal de Lección/Unidad no tiene equivalente — ahí la completitud siempre es implícita (todas las actividades tienen <code>has_attemp</code> en <code>true</code>), sin ninguna pantalla o evento dedicado de \"lección completada\".",
+                       en: "Finishing a test checks whether there's a next lesson or unit in the content tree. If there is genuinely nothing left, a congratulations modal fires: <em>\"Congratulations, level completed!\"</em> — this is the <strong>only</strong> place in the whole app with an explicit \"you're done\" celebration. Regular Lesson/Unit browsing has no equivalent — completion there is only ever implicit (every activity's <code>has_attemp</code> is <code>true</code>), with no dedicated \"lesson complete\" screen or event." },
+
+    s_teacher_h2: { es: "Clases, calificación y reportes (lado docente)", en: "Classes, grading &amp; reports (teacher side)" },
+    th_purpose: { es: "Propósito", en: "Purpose" }, th_endpoint3: { es: "Endpoint", en: "Endpoint" },
+    t_tr1: { es: "Clases del docente", en: "Teacher's classes" },
+    t_tr2: { es: "Listado de alumnos + progreso", en: "Class roster + progress" },
+    t_tr3: { es: "Cola de calificación pendiente", en: "Pending grading queue" },
+    t_tr4: { es: "Intento completo para calificar manualmente", en: "Full attempt for manual grading" },
+    t_tr5: { es: "Enviar una calificación manual + feedback", en: "Submit a manual grade + feedback" },
+    t_tr6: { es: "Abrir/cerrar una ventana de test de práctica", en: "Open/close a practice-test window" },
+    t_tr7: { es: "Cambiar la clave de ingreso de una clase", en: "Update a class's join key/password" },
+    t_tr8: { es: "Promedios por corte (periodo de calificación)", en: "Per-corte (grading period) averages" },
+    t_tr9: { es: "Descargar reporte Excel del grupo", en: "Download Excel group report" },
+    t_binary: { es: "(binario)", en: "(binary)" },
+    teacher_p1: { es: "Cuerpo de calificación manual: <code class=\"mono\">{ contents: [{ id, percentage }], feedback }</code> — porcentaje por contenido, limitado para que la suma nunca pase de 100.",
+                  en: "Manual grading body: <code class=\"mono\">{ contents: [{ id, percentage }], feedback }</code> — per-content percentage, clamped so the sum never exceeds 100." },
+    teacher_warn1: { es: "El control de acceso por rol (estudiante vs. docente) es casi enteramente <strong>del lado del cliente</strong> — chequeos de <code>userData.rol_code === \"02\"</code> esparcidos por los componentes, no algo visible como un contrato dedicado del backend desde este código. Confirma directamente con el backend si estos endpoints aplican controles de rol/propiedad de forma independiente del lado del servidor antes de asumir que el mismo control solo-del-cliente es seguro en el móvil.",
+                    en: "Role gating (student vs. teacher) is almost entirely <strong>client-side</strong> — <code>userData.rol_code === \"02\"</code> checks scattered through components, not something visible as a dedicated backend contract from this code. Confirm directly with backend whether these endpoints independently enforce ownership/role checks server-side before assuming the same client-only gating is safe on mobile." },
+
+    s_caveats_h2: { es: "Problemas a tener en cuenta antes de portar", en: "Known issues worth flagging before porting" },
+    cav_li1: { es: "<strong>Sin flujo de refresh-token.</strong> Un solo 401 en cualquier parte borra toda la sesión. Decidan si el móvil quiere el mismo comportamiento o algo más suave.",
+               en: "<strong>No refresh-token flow.</strong> A single 401 anywhere wipes the whole session. Decide if mobile wants the same behavior or something gentler." },
+    cav_li2: { es: "<strong>Login y <code>/user/me</code> tienen formas distintas.</strong> El login es plano; <code>/user/me</code> anida los campos de perfil bajo <code>profile</code>. No asuman un solo esquema para \"el objeto usuario\".",
+               en: "<strong>Login vs. <code>/user/me</code> have different shapes.</strong> Login is flat; <code>/user/me</code> nests profile fields under <code>profile</code>. Don't assume one schema for \"the user object.\"" },
+    cav_li3: { es: "<strong>Bug de coerción de tipos en las comparaciones de calificación</strong> (<code>percentage</code> como número vs. <code>qualify_weigth</code> como string) — corregido en la mayoría de lugares con <code>Number()</code>, no en todos.",
+               en: "<strong>Type coercion bug in grading comparisons</strong> (<code>percentage</code> as number vs. <code>qualify_weigth</code> as string) — fixed in most places with <code>Number()</code>, not all." },
+    cav_li4: { es: "<strong>UI de 6 niveles hardcodeada</strong> en la web, a pesar de que el curso real tiene más niveles (10 vistos en vivo). No copien este límite.",
+               en: "<strong>Hardcoded 6-level UI</strong> on web, despite the real course having more levels (10 seen live). Don't copy this limit." },
+    cav_li5: { es: "<strong>Dos campos de Redux muertos</strong> — <code>idsActivities</code> y <code>dataCompleteActivities</code> están declarados pero nunca se llenan en ninguna parte del código. No asuman que llevan datos reales si consultan el código fuente web.",
+               en: "<strong>Two dead Redux fields</strong> — <code>idsActivities</code> and <code>dataCompleteActivities</code> are declared but never populated anywhere in the codebase. Don't assume they carry real data if referencing the web source." },
+    cav_li6: { es: "<strong>Los Tests solo renderizan Opción Múltiple</strong> sin importar el tipo real de actividad por debajo — una simplificación deliberada (o quizás incompleta) que vale la pena decidir como producto para el móvil.",
+               en: "<strong>Tests only render Multiple Choice</strong> regardless of the real activity type underneath — a deliberate (or perhaps incomplete) simplification worth a product decision for mobile." },
+    cav_li7: { es: "<strong>Sin evento explícito de \"lección/unidad completada\"</strong> fuera del modal de nivel completado del módulo de Tests — en lo demás, la completitud es solo un estado inferido.",
+               en: "<strong>No explicit \"lesson/unit complete\" event</strong> outside the Tests module's level-completion modal — completion is otherwise just an inferred state." },
+    cav_li8: { es: "<strong><code>average_attempts</code></strong> solo existe pre-calculado en el endpoint de reporte <code>me_skills</code> — no hay ninguna fórmula que replicar del lado del cliente.",
+               en: "<strong><code>average_attempts</code></strong> only exists pre-computed in the <code>me_skills</code> report endpoint — there's no formula to replicate client-side." },
+    cav_li9: { es: "<strong>Algunos endpoints reusan un mismo nombre de recurso para cosas muy distintas</strong> — ej. <code>group</code> es la ruta base para unidades/actividades, calificaciones, posición, contraseña, actividades pendientes, y el reporte Excel. <code>endpoints.ts</code> por sí solo no distingue esto; el sufijo que discrimina está hardcodeado en cada punto de llamada.",
+               en: "<strong>Some endpoints reuse one resource name for very different things</strong> — e.g. <code>group</code> is the base path for units/activities, grades, position, password, pending-activities, and the Excel report. <code>endpoints.ts</code> alone doesn't disambiguate these; the discriminating suffix is hardcoded at each call site." },
+
+    s_index_h2: { es: "Índice completo de endpoints", en: "Full endpoint index" },
+    th_domain: { es: "Dominio", en: "Domain" }, th_methpath: { es: "Método y ruta", en: "Method &amp; path" }, th_purpose2: { es: "Propósito", en: "Purpose" },
+    idx_auth: { es: "Auth", en: "Auth" }, idx_profile: { es: "Perfil", en: "Profile" }, idx_navdom: { es: "Navegación", en: "Navigation" },
+    idx_progdom: { es: "Progreso", en: "Progress" }, idx_actdom: { es: "Actividades", en: "Activities" }, idx_testsdom: { es: "Tests", en: "Tests" }, idx_teachdom: { es: "Docente", en: "Teacher" },
+    idx_1: { es: "Login", en: "Login" },
+    idx_2: { es: "Listar matrículas", en: "List enrolments" },
+    idx_3: { es: "Registro", en: "Register" },
+    idx_4: { es: "Usuario actual (perfil anidado)", en: "Current user (nested profile)" },
+    idx_5: { es: "Pedir link de reseteo", en: "Request reset link" },
+    idx_6: { es: "Resetear con token", en: "Reset with token" },
+    idx_7: { es: "Cambiar contraseña (con sesión)", en: "Change password (logged in)" },
+    idx_8: { es: "Actualizar el propio perfil", en: "Update own profile" },
+    idx_9: { es: "Subir foto de perfil", en: "Upload profile photo" },
+    idx_10: { es: "Borrar foto de perfil", en: "Delete profile photo" },
+    idx_11: { es: "Listar cursos", en: "List courses" },
+    idx_12: { es: "Niveles de un curso", en: "Levels for a course" },
+    idx_13: { es: "Grupos/clases de un nivel", en: "Groups/classes for a level" },
+    idx_14: { es: "Matricularse en una clase con una clave", en: "Enroll into a class with a key" },
+    idx_15: { es: "Árbol de contenido completo", en: "Full content tree" },
+    idx_16: { es: "Posición para retomar", en: "Resume position" },
+    idx_17: { es: "% de completitud por nivel", en: "Per-level completion %" },
+    idx_18: { es: "Hoja de calificación por actividad", en: "Per-activity grade sheet" },
+    idx_19: { es: "Reporte por habilidad", en: "Per-skill report" },
+    idx_20: { es: "Iniciar/continuar un intento", en: "Start/continue an attempt" },
+    idx_21: { es: "Revisar mi intento", en: "Review my attempt" },
+    idx_22: { es: "Revisión del docente", en: "Teacher review" },
+    idx_23: { es: "Enviar respuestas (lección)", en: "Submit answers (lesson)" },
+    idx_24: { es: "Desglose calificado", en: "Graded breakdown" },
+    idx_25: { es: "Intento completo para calificar", en: "Full attempt for grading" },
+    idx_26: { es: "Calificación manual del docente", en: "Teacher manual grade" },
+    idx_27: { es: "Árbol de contenido marcado como test", en: "Test-flagged content tree" },
+    idx_28: { es: "Abrir/cerrar ventana de test", en: "Open/close test window" },
+    idx_29: { es: "Enviar respuestas (test — sin segmento de grupo)", en: "Submit answers (test — no group segment)" },
+    idx_30: { es: "Revisar un paso del test", en: "Review a test step" },
+    idx_31: { es: "Listado de alumnos + progreso", en: "Class roster + progress" },
+    idx_32: { es: "Cola de calificación pendiente", en: "Pending grading queue" },
+    idx_33: { es: "Cambiar clave de ingreso de la clase", en: "Change class join key" },
+    idx_34: { es: "Promedios del periodo de calificación", en: "Grading-period averages" },
+    idx_35: { es: "Reporte Excel (binario)", en: "Excel report (binary)" },
+
+    footer_text: { es: "Compilado a partir del código fuente de <code>abblo-frontend-jesus-trocha</code> y una petición capturada en vivo contra la API de producción. Los endpoints no alcanzables desde los flujos de la app de estudiante/docente (rutas puras de panel admin) están intencionalmente fuera de alcance.",
+                   en: "Compiled from the <code>abblo-frontend-jesus-trocha</code> source and one live-captured request against the production API. Endpoints not reachable from the student/teacher app flows (pure admin-dashboard routes) are intentionally out of scope." }
+  };
+
+  function applyLang(lang){
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      var key = el.getAttribute('data-i18n');
+      var entry = I18N[key];
+      if (entry && entry[lang] != null) el.innerHTML = entry[lang];
+    });
+    document.getElementById('btn-es').classList.toggle('active', lang === 'es');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.documentElement.setAttribute('lang', lang);
+    try { localStorage.setItem('abblo-doc-lang', lang); } catch(e){}
+  }
+  window.setLang = applyLang;
+
+  var saved = 'es';
+  try { saved = localStorage.getItem('abblo-doc-lang') || 'es'; } catch(e){}
+  applyLang(saved);
+})();
+</script>
+
+</body>
+</html>
