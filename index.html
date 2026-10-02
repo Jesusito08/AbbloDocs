@@ -173,6 +173,7 @@
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 </head>
 <body>
 <button class="menu-btn" onclick="document.querySelector('nav.toc').classList.toggle('open')"><span data-i18n="menu">☰ Índice</span></button>
@@ -190,6 +191,7 @@
     <a href="#overview" data-i18n="nav_overview">Resumen</a>
     <a href="#conventions" data-i18n="nav_conventions">Convenciones de las peticiones</a>
     <a href="#data-model" data-i18n="nav_data_model">Modelo de datos central</a>
+    <a href="#resolve-group" data-i18n="nav_resolve_group">Cómo resolver el idGroup</a>
 
     <div class="grp" data-i18n="grp_auth">Auth y perfil</div>
     <a href="#auth" data-i18n="nav_auth">Autenticación</a>
@@ -291,6 +293,28 @@
   }
 ]</code></pre>
       <p class="src" data-i18n="dm_src">Campos confirmados en <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> y en el uso real en toda la app.</p>
+    </section>
+
+    <section id="resolve-group">
+      <h2 data-i18n="s_rg_h2">Cómo resolver el idGroup</h2>
+      <p data-i18n="rg_p1">Casi todos los endpoints de contenido llevan el id de grupo en la URL. El frontend web <strong>nunca</strong> usa <code>enrolments[0]</code>: el grupo se deriva siempre del <strong>nivel que la persona seleccionó</strong>, buscando en <code>enrolments</code> la matrícula de ese nivel que esté activa.</p>
+      <pre><code><span class="tok-key">const</span> idGroup = enrolments.find(
+  (e) => e.level_course.id === selectedLevelId &amp;&amp; e.group.is_active === <span class="tok-bool">true</span>
+)?.group?.id;
+
+<span class="tok-str">// luego, por ejemplo:</span>
+GET group/${idGroup}/units/activities
+GET group/${idGroup}/user/${idUser}/grades
+GET activity/${idActivity}/group/${idGroup}/attempt</code></pre>
+      <div class="warn" data-i18n="rg_warn"><strong>Error común:</strong> enviar siempre <code>enrolments[0].group.id</code>. Eso hace que, sin importar la card/nivel que la persona elija, todas las peticiones lleven el mismo grupo (el del primer enrolment del arreglo) y el backend responda con el contenido de ese grupo en vez del nivel seleccionado. El orden de <code>user/enrolments</code> no tiene ningún significado funcional.</div>
+      <h4 data-i18n="rg_rules_h">Reglas que sigue la web</h4>
+      <ol>
+        <li data-i18n="rg_li1"><strong>Cambia el nivel → se recalcula el grupo.</strong> Al hacer clic en una card de nivel (<code>Levels.tsx</code>), al cambiar de nivel en el selector del header (<code>NavLevels.tsx</code>) y en el Home según el <code>idLevel</code> actual, se vuelve a buscar el <code>idGroup</code> y se vuelven a pedir <code>units/activities</code> y <code>grades</code>.</li>
+        <li data-i18n="rg_li2"><strong>Sin matrícula activa para ese nivel → el nivel está bloqueado.</strong> Si el <code>find</code> devuelve <code>undefined</code>, la web no navega y muestra "This level is not active". No hace fallback a <code>enrolments[0]</code>.</li>
+        <li data-i18n="rg_li3"><strong>Varias matrículas del mismo nivel:</strong> solo cuenta la que tiene <code>group.is_active === true</code>. Las anteriores (otros periodos) son historial. Si hubiera más de una activa para el mismo nivel, la web toma la primera que devuelve <code>find</code>.</li>
+        <li data-i18n="rg_li4"><strong>Pantalla "selecciona tu nivel y escribe el token":</strong> es el flujo de matrícula. La persona elige nivel → grupo/clase y escribe la clave; se envía <code>POST coursetoken/enroll</code> con <code>id_group</code> y <code>group_password</code>, se vuelve a pedir <code>user/enrolments</code> y a partir de ahí el grupo se resuelve por nivel como arriba.</li>
+        <li data-i18n="rg_li5"><strong>Único fallback (último recurso):</strong> si no hay <code>idGroup</code> en el estado, el servicio de actividades busca la matrícula del nivel actual y, si tampoco, la primera con <code>group.is_active</code>. Es una red de seguridad, no el camino normal.</li>
+      </ol>
     </section>
 
     <section id="auth">
@@ -904,6 +928,24 @@
     dm_example_h: { es: "Ejemplo: respuesta de <code class=\"mono\">GET user/enrolments</code>", en: "Example: <code class=\"mono\">GET user/enrolments</code> response" },
     dm_src: { es: "Campos confirmados en <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> y en el uso real en toda la app.",
               en: "Fields confirmed from <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> and real usage across the app." },
+
+    nav_resolve_group: { es: "Cómo resolver el idGroup", en: "How to resolve idGroup" },
+    s_rg_h2: { es: "Cómo resolver el idGroup", en: "How to resolve idGroup" },
+    rg_p1: { es: "Casi todos los endpoints de contenido llevan el id de grupo en la URL. El frontend web <strong>nunca</strong> usa <code>enrolments[0]</code>: el grupo se deriva siempre del <strong>nivel que la persona seleccionó</strong>, buscando en <code>enrolments</code> la matrícula de ese nivel que esté activa.",
+             en: "Almost every content endpoint carries the group id in the URL. The web frontend <strong>never</strong> uses <code>enrolments[0]</code>: the group is always derived from the <strong>level the person selected</strong>, by looking up the active enrolment for that level in <code>enrolments</code>." },
+    rg_warn: { es: "<strong>Error común:</strong> enviar siempre <code>enrolments[0].group.id</code>. Eso hace que, sin importar la card/nivel que la persona elija, todas las peticiones lleven el mismo grupo (el del primer enrolment del arreglo) y el backend responda con el contenido de ese grupo en vez del nivel seleccionado. El orden de <code>user/enrolments</code> no tiene ningún significado funcional.",
+               en: "<strong>Common mistake:</strong> always sending <code>enrolments[0].group.id</code>. That makes every request carry the same group (the first enrolment in the array) no matter which card/level the person picks, so the backend answers with that group's content instead of the selected level's. The order of <code>user/enrolments</code> has no functional meaning." },
+    rg_rules_h: { es: "Reglas que sigue la web", en: "Rules the web app follows" },
+    rg_li1: { es: "<strong>Cambia el nivel → se recalcula el grupo.</strong> Al hacer clic en una card de nivel (<code>Levels.tsx</code>), al cambiar de nivel en el selector del header (<code>NavLevels.tsx</code>) y en el Home según el <code>idLevel</code> actual, se vuelve a buscar el <code>idGroup</code> y se vuelven a pedir <code>units/activities</code> y <code>grades</code>.",
+              en: "<strong>Level changes → group is recomputed.</strong> When clicking a level card (<code>Levels.tsx</code>), switching level in the header selector (<code>NavLevels.tsx</code>), and on Home based on the current <code>idLevel</code>, the <code>idGroup</code> is looked up again and <code>units/activities</code> and <code>grades</code> are re-fetched." },
+    rg_li2: { es: "<strong>Sin matrícula activa para ese nivel → el nivel está bloqueado.</strong> Si el <code>find</code> devuelve <code>undefined</code>, la web no navega y muestra \"This level is not active\". No hace fallback a <code>enrolments[0]</code>.",
+              en: "<strong>No active enrolment for that level → the level is locked.</strong> If <code>find</code> returns <code>undefined</code>, the web doesn't navigate and shows \"This level is not active\". It does not fall back to <code>enrolments[0]</code>." },
+    rg_li3: { es: "<strong>Varias matrículas del mismo nivel:</strong> solo cuenta la que tiene <code>group.is_active === true</code>. Las anteriores (otros periodos) son historial. Si hubiera más de una activa para el mismo nivel, la web toma la primera que devuelve <code>find</code>.",
+              en: "<strong>Several enrolments for the same level:</strong> only the one with <code>group.is_active === true</code> counts. Earlier ones (other periods) are history. If more than one were active for the same level, the web takes the first one <code>find</code> returns." },
+    rg_li4: { es: "<strong>Pantalla \"selecciona tu nivel y escribe el token\":</strong> es el flujo de matrícula. La persona elige nivel → grupo/clase y escribe la clave; se envía <code>POST coursetoken/enroll</code> con <code>id_group</code> y <code>group_password</code>, se vuelve a pedir <code>user/enrolments</code> y a partir de ahí el grupo se resuelve por nivel como arriba.",
+              en: "<strong>\"Select your level and enter the token\" screen:</strong> this is the enrolment flow. The person picks a level → group/class and types the key; <code>POST coursetoken/enroll</code> is sent with <code>id_group</code> and <code>group_password</code>, <code>user/enrolments</code> is fetched again, and from then on the group is resolved by level as above." },
+    rg_li5: { es: "<strong>Único fallback (último recurso):</strong> si no hay <code>idGroup</code> en el estado, el servicio de actividades busca la matrícula del nivel actual y, si tampoco, la primera con <code>group.is_active</code>. Es una red de seguridad, no el camino normal.",
+              en: "<strong>Only fallback (last resort):</strong> if there's no <code>idGroup</code> in state, the activity service looks up the current level's enrolment and, failing that, the first one with <code>group.is_active</code>. It's a safety net, not the normal path." },
 
     s_auth_h2: { es: "Autenticación", en: "Authentication" },
     auth_p1: { es: "Login. <code>multipart/form-data</code> con <code>identification_number</code> + <code>password</code>. <strong>La respuesta es plana</strong> — el token y el perfil completo vienen juntos al nivel superior, no anidados:",
