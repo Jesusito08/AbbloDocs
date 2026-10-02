@@ -191,6 +191,7 @@
     <a href="#overview" data-i18n="nav_overview">Resumen</a>
     <a href="#conventions" data-i18n="nav_conventions">Convenciones de las peticiones</a>
     <a href="#data-model" data-i18n="nav_data_model">Modelo de datos central</a>
+    <a href="#pre-home" data-i18n="nav_pre_home">Flujo antes del Home</a>
     <a href="#resolve-group" data-i18n="nav_resolve_group">Cómo resolver el idGroup</a>
 
     <div class="grp" data-i18n="grp_auth">Auth y perfil</div>
@@ -293,6 +294,35 @@
   }
 ]</code></pre>
       <p class="src" data-i18n="dm_src">Campos confirmados en <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> y en el uso real en toda la app.</p>
+    </section>
+
+    <section id="pre-home">
+      <h2 data-i18n="s_ph_h2">Flujo antes del Home</h2>
+      <p data-i18n="ph_p1">Qué pasa desde que se abre la app hasta que se llega a <code>/home</code>. Es el flujo <strong>que hace la web hoy</strong>, leído del código; no incluye lo que haga la app móvil por su cuenta.</p>
+
+      <div class="flow">
+        <div class="step"><div class="num">1</div><div class="body" style="flex:1"><h4 data-i18n="ph_s1_h">Login</h4><p data-i18n="ph_s1_p"><span class="mono">POST auth</span> (<code>identification_number</code> + <code>password</code>) y, con el <code>access_token</code> recién recibido, <span class="mono">GET user/enrolments</span>. Se guardan token, datos del usuario y matrículas. Al entrar a la pantalla de login la web limpia cualquier sesión anterior. Si la petición de matrículas falla, quedan <code>[]</code> y no se muestra nada.</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">2</div><div class="body" style="flex:1"><h4 data-i18n="ph_s2_h">Siempre se pasa por /welcome</h4><p data-i18n="ph_s2_p">Estudiantes y docentes por igual. <strong>No existe la regla "si no tiene matrículas, ir a welcome"</strong>: todo el que inicia sesión llega ahí. La regla antigua que saltaba directo a <code>/home</code> si ya había grupo activo está comentada.</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">3</div><div class="body" style="flex:1"><h4 data-i18n="ph_s3_h">Elegir curso</h4><p data-i18n="ph_s3_p"><span class="mono">GET course/all</span>. Al tocar un curso se guarda <code>idCourse</code> y un <code>idLevel</code> provisional: el nivel de la matrícula activa de ese curso (o <code>undefined</code> si no hay). No hay petición ni navegación; solo cambia la pantalla.</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">4</div><div class="body" style="flex:1"><h4 data-i18n="ph_s4_h">Elegir nivel</h4><p data-i18n="ph_s4_p"><span class="mono">GET course/{idCourse}/levels</span>, ordenado por <code>ordering</code>. Al tocar una card: si en <code>enrolments</code> hay una matrícula <strong>activa</strong> (<code>group.is_active</code>) de ese nivel, se guarda <code>idLevel</code> y se navega a <code>/home</code>. Si no la hay, <strong>no pasa nada</strong> (clic muerto en el código actual).</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">5</div><div class="body" style="flex:1"><h4 data-i18n="ph_s5_h">Unirse a una clase (/welcome/classes)</h4><p data-i18n="ph_s5_p">Solo se llega por URL; ninguna pantalla enlaza hoy a ella. Pide <span class="mono">GET levelcourse/{idLevel}/groups?page=1&amp;per_page=6&amp;order_by=group.name-asc</span> (se muestran los que tienen <code>offered</code> e <code>is_active</code>) y <span class="mono">GET user/enrolments</span> para marcar en cuáles ya está matriculado. La persona escribe la clave de la clase y se envía <span class="mono">POST coursetoken/enroll</span> con <code>{ id_group, token, group_password }</code>. Si sale bien: se vuelve a pedir <code>user/enrolments</code> y se navega a <code>/home</code>.</p></div></div>
+        <div class="line"></div>
+        <div class="step"><div class="num">6</div><div class="body" style="flex:1"><h4 data-i18n="ph_s6_h">Home</h4><p data-i18n="ph_s6_p">Con <code>idLevel</code> definido, busca la matrícula activa de ese nivel (ver <a href="#resolve-group">Cómo resolver el idGroup</a>) y pide <span class="mono">me/position</span>, <span class="mono">units/activities</span> y <span class="mono">progress/me</span>. Si no encuentra matrícula activa no redirige a welcome: muestra un dashboard vacío o parcial.</p></div></div>
+      </div>
+
+      <div class="warn" data-i18n="ph_warn_token"><strong>El flujo del token está desactivado en la web.</strong> Canjear el token enviado por correo (<code>GET coursetoken/info/{token}</code>, modal de token, unir lo recibido a <code>enrolments</code> y navegar a clases) está comentado en <code>LevelsWelcome.tsx</code>. Por eso <code>dataCourse.tokenLevel</code> nunca se llena y el campo <code>token</code> de <code>coursetoken/enroll</code> viaja como <code>""</code>. La pantalla móvil "selecciona tu nivel y escribe el token" <strong>no tiene un equivalente activo en el código web</strong>: su contrato (qué devuelve la validación del token y cómo se relaciona con <code>id_group</code>) hay que confirmarlo con backend, no deducirlo de este documento.</div>
+
+      <h4 data-i18n="ph_misc_h">Otros detalles del flujo</h4>
+      <ul>
+        <li data-i18n="ph_li1"><strong>Registro:</strong> <span class="mono">POST user</span> y luego se manda al login; la persona <em>no</em> queda con sesión iniciada y debe hacer los pasos 1 a 6.</li>
+        <li data-i18n="ph_li2"><strong>Estado persistido:</strong> el estado de Redux se guarda en <code>localStorage</code>, así que <code>idCourse</code> e <code>idLevel</code> sobreviven a una recarga. <code>/welcome/classes</code> depende de eso.</li>
+        <li data-i18n="ph_li3"><strong>Sesión vencida:</strong> un 401 en cualquier petición limpia la sesión y regresa a la pantalla inicial.</li>
+        <li data-i18n="ph_li4"><strong>Docente:</strong> usa las mismas pantallas welcome (curso → nivel). Un docente sin matrículas queda atascado en el clic muerto del paso 4; no hay un atajo específico para docentes.</li>
+      </ul>
     </section>
 
     <section id="resolve-group">
@@ -929,6 +959,39 @@ GET activity/${idActivity}/group/${idGroup}/attempt</code></pre>
     dm_src: { es: "Campos confirmados en <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> y en el uso real en toda la app.",
               en: "Fields confirmed from <code>src/interfaces/userCurrentCourse/userCurrentCourse.ts</code> and real usage across the app." },
 
+    nav_pre_home: { es: "Flujo antes del Home", en: "Flow before Home" },
+    s_ph_h2: { es: "Flujo antes del Home", en: "Flow before Home" },
+    ph_p1: { es: "Qué pasa desde que se abre la app hasta que se llega a <code>/home</code>. Es el flujo <strong>que hace la web hoy</strong>, leído del código; no incluye lo que haga la app móvil por su cuenta.",
+             en: "What happens from opening the app until reaching <code>/home</code>. This is the flow <strong>the web does today</strong>, read from the code; it does not include whatever the mobile app does on its own." },
+    ph_s1_h: { es: "Login", en: "Login" },
+    ph_s1_p: { es: "<span class=\"mono\">POST auth</span> (<code>identification_number</code> + <code>password</code>) y, con el <code>access_token</code> recién recibido, <span class=\"mono\">GET user/enrolments</span>. Se guardan token, datos del usuario y matrículas. Al entrar a la pantalla de login la web limpia cualquier sesión anterior. Si la petición de matrículas falla, quedan <code>[]</code> y no se muestra nada.",
+               en: "<span class=\"mono\">POST auth</span> (<code>identification_number</code> + <code>password</code>) and, with the freshly received <code>access_token</code>, <span class=\"mono\">GET user/enrolments</span>. Token, user data and enrolments are stored. On entering the login screen the web clears any previous session. If the enrolments request fails they stay <code>[]</code> and nothing is shown." },
+    ph_s2_h: { es: "Siempre se pasa por /welcome", en: "Everyone goes through /welcome" },
+    ph_s2_p: { es: "Estudiantes y docentes por igual. <strong>No existe la regla \"si no tiene matrículas, ir a welcome\"</strong>: todo el que inicia sesión llega ahí. La regla antigua que saltaba directo a <code>/home</code> si ya había grupo activo está comentada.",
+               en: "Students and teachers alike. <strong>There is no \"if no enrolments, go to welcome\" rule</strong>: everyone who logs in lands there. The old rule that jumped straight to <code>/home</code> when there was an active group is commented out." },
+    ph_s3_h: { es: "Elegir curso", en: "Pick a course" },
+    ph_s3_p: { es: "<span class=\"mono\">GET course/all</span>. Al tocar un curso se guarda <code>idCourse</code> y un <code>idLevel</code> provisional: el nivel de la matrícula activa de ese curso (o <code>undefined</code> si no hay). No hay petición ni navegación; solo cambia la pantalla.",
+               en: "<span class=\"mono\">GET course/all</span>. Tapping a course stores <code>idCourse</code> and a provisional <code>idLevel</code>: the level of that course's active enrolment (or <code>undefined</code> if none). No request and no navigation; the screen just changes." },
+    ph_s4_h: { es: "Elegir nivel", en: "Pick a level" },
+    ph_s4_p: { es: "<span class=\"mono\">GET course/{idCourse}/levels</span>, ordenado por <code>ordering</code>. Al tocar una card: si en <code>enrolments</code> hay una matrícula <strong>activa</strong> (<code>group.is_active</code>) de ese nivel, se guarda <code>idLevel</code> y se navega a <code>/home</code>. Si no la hay, <strong>no pasa nada</strong> (clic muerto en el código actual).",
+               en: "<span class=\"mono\">GET course/{idCourse}/levels</span>, sorted by <code>ordering</code>. Tapping a card: if <code>enrolments</code> has an <strong>active</strong> enrolment (<code>group.is_active</code>) for that level, <code>idLevel</code> is stored and it navigates to <code>/home</code>. If not, <strong>nothing happens</strong> (dead click in the current code)." },
+    ph_s5_h: { es: "Unirse a una clase (/welcome/classes)", en: "Join a class (/welcome/classes)" },
+    ph_s5_p: { es: "Solo se llega por URL; ninguna pantalla enlaza hoy a ella. Pide <span class=\"mono\">GET levelcourse/{idLevel}/groups?page=1&amp;per_page=6&amp;order_by=group.name-asc</span> (se muestran los que tienen <code>offered</code> e <code>is_active</code>) y <span class=\"mono\">GET user/enrolments</span> para marcar en cuáles ya está matriculado. La persona escribe la clave de la clase y se envía <span class=\"mono\">POST coursetoken/enroll</span> con <code>{ id_group, token, group_password }</code>. Si sale bien: se vuelve a pedir <code>user/enrolments</code> y se navega a <code>/home</code>.",
+               en: "Only reachable by URL; no screen links to it today. It requests <span class=\"mono\">GET levelcourse/{idLevel}/groups?page=1&amp;per_page=6&amp;order_by=group.name-asc</span> (groups with <code>offered</code> and <code>is_active</code> are shown) and <span class=\"mono\">GET user/enrolments</span> to flag the ones already enrolled. The person types the class key and <span class=\"mono\">POST coursetoken/enroll</span> is sent with <code>{ id_group, token, group_password }</code>. On success: <code>user/enrolments</code> is fetched again and it navigates to <code>/home</code>." },
+    ph_s6_h: { es: "Home", en: "Home" },
+    ph_s6_p: { es: "Con <code>idLevel</code> definido, busca la matrícula activa de ese nivel (ver <a href=\"#resolve-group\">Cómo resolver el idGroup</a>) y pide <span class=\"mono\">me/position</span>, <span class=\"mono\">units/activities</span> y <span class=\"mono\">progress/me</span>. Si no encuentra matrícula activa no redirige a welcome: muestra un dashboard vacío o parcial.",
+               en: "With <code>idLevel</code> set, it looks up that level's active enrolment (see <a href=\"#resolve-group\">How to resolve idGroup</a>) and requests <span class=\"mono\">me/position</span>, <span class=\"mono\">units/activities</span> and <span class=\"mono\">progress/me</span>. If it finds no active enrolment it does not redirect to welcome: it shows an empty or partial dashboard." },
+    ph_warn_token: { es: "<strong>El flujo del token está desactivado en la web.</strong> Canjear el token enviado por correo (<code>GET coursetoken/info/{token}</code>, modal de token, unir lo recibido a <code>enrolments</code> y navegar a clases) está comentado en <code>LevelsWelcome.tsx</code>. Por eso <code>dataCourse.tokenLevel</code> nunca se llena y el campo <code>token</code> de <code>coursetoken/enroll</code> viaja como <code>\"\"</code>. La pantalla móvil \"selecciona tu nivel y escribe el token\" <strong>no tiene un equivalente activo en el código web</strong>: su contrato (qué devuelve la validación del token y cómo se relaciona con <code>id_group</code>) hay que confirmarlo con backend, no deducirlo de este documento.",
+                     en: "<strong>The token flow is disabled on the web.</strong> Redeeming the token sent by email (<code>GET coursetoken/info/{token}</code>, token modal, merging the result into <code>enrolments</code> and navigating to classes) is commented out in <code>LevelsWelcome.tsx</code>. That's why <code>dataCourse.tokenLevel</code> is never set and the <code>token</code> field of <code>coursetoken/enroll</code> is sent as <code>\"\"</code>. The mobile \"select your level and enter the token\" screen <strong>has no active equivalent in the web code</strong>: its contract (what the token validation returns and how it relates to <code>id_group</code>) must be confirmed with the backend, not deduced from this document." },
+    ph_misc_h: { es: "Otros detalles del flujo", en: "Other flow details" },
+    ph_li1: { es: "<strong>Registro:</strong> <span class=\"mono\">POST user</span> y luego se manda al login; la persona <em>no</em> queda con sesión iniciada y debe hacer los pasos 1 a 6.",
+              en: "<strong>Sign-up:</strong> <span class=\"mono\">POST user</span> then it sends the person to login; they are <em>not</em> logged in and must go through steps 1 to 6." },
+    ph_li2: { es: "<strong>Estado persistido:</strong> el estado de Redux se guarda en <code>localStorage</code>, así que <code>idCourse</code> e <code>idLevel</code> sobreviven a una recarga. <code>/welcome/classes</code> depende de eso.",
+              en: "<strong>Persisted state:</strong> Redux state is saved in <code>localStorage</code>, so <code>idCourse</code> and <code>idLevel</code> survive a reload. <code>/welcome/classes</code> depends on that." },
+    ph_li3: { es: "<strong>Sesión vencida:</strong> un 401 en cualquier petición limpia la sesión y regresa a la pantalla inicial.",
+              en: "<strong>Expired session:</strong> a 401 on any request clears the session and returns to the initial screen." },
+    ph_li4: { es: "<strong>Docente:</strong> usa las mismas pantallas welcome (curso → nivel). Un docente sin matrículas queda atascado en el clic muerto del paso 4; no hay un atajo específico para docentes.",
+              en: "<strong>Teacher:</strong> uses the same welcome screens (course → level). A teacher with no enrolments gets stuck on the dead click in step 4; there's no teacher-specific shortcut." },
     nav_resolve_group: { es: "Cómo resolver el idGroup", en: "How to resolve idGroup" },
     s_rg_h2: { es: "Cómo resolver el idGroup", en: "How to resolve idGroup" },
     rg_p1: { es: "Casi todos los endpoints de contenido llevan el id de grupo en la URL. El frontend web <strong>nunca</strong> usa <code>enrolments[0]</code>: el grupo se deriva siempre del <strong>nivel que la persona seleccionó</strong>, buscando en <code>enrolments</code> la matrícula de ese nivel que esté activa.",
